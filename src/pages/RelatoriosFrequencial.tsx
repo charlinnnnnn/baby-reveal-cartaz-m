@@ -17,8 +17,8 @@ import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
 import useUserDataService from "@/services/userDataService";
 import { useToast } from "@/hooks/use-toast";
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import ReportManager from "@/components/ReportManager";
+import BirthdayNotifications from "@/components/BirthdayNotifications";
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -164,6 +164,8 @@ const RelatoriosFrequencial = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <BirthdayNotifications />
+      
       <header className="bg-white shadow-md py-4 px-6 border-b border-blue-100">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -230,6 +232,16 @@ const RelatoriosFrequencial = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Seção de Relatórios */}
+        <Card className="border-blue-100 shadow-md mb-6">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-100">
+            <CardTitle className="text-[#2196F3]">Relatórios de Atendimentos</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <ReportManager variant="tarot" />
+          </CardContent>
+        </Card>
 
         <div className="mb-6 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-700">Lista de Clientes</h2>

@@ -66,6 +66,46 @@ const useUserDataService = () => {
   const saveAllTarotAnalyses = (analyses: any[]) => {
     localStorage.setItem('analises', JSON.stringify(analyses));
   };
+
+  // Check for birthdays today
+  const checkBirthdays = () => {
+    const atendimentos = getAtendimentos();
+    const today = new Date();
+    const todayString = `${today.getDate().toString().padStart(2, '0')}-${(today.getMonth() + 1).toString().padStart(2, '0')}`;
+    
+    const birthdaysToday = atendimentos.filter(atendimento => {
+      if (atendimento.dataNascimento) {
+        const birthDate = new Date(atendimento.dataNascimento);
+        const birthString = `${birthDate.getDate().toString().padStart(2, '0')}-${(birthDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        return birthString === todayString;
+      }
+      return false;
+    });
+
+    return birthdaysToday;
+  };
+
+  // Get clients with their consultation count
+  const getClientsWithConsultations = () => {
+    const atendimentos = getAtendimentos();
+    const clientsMap = new Map();
+
+    atendimentos.forEach(atendimento => {
+      const clientName = atendimento.nome;
+      if (clientsMap.has(clientName)) {
+        clientsMap.get(clientName).count++;
+        clientsMap.get(clientName).consultations.push(atendimento);
+      } else {
+        clientsMap.set(clientName, {
+          name: clientName,
+          count: 1,
+          consultations: [atendimento]
+        });
+      }
+    });
+
+    return Array.from(clientsMap.values());
+  };
   
   return {
     saveAtendimentos,
@@ -73,7 +113,9 @@ const useUserDataService = () => {
     saveTarotAnalyses,
     getTarotAnalyses,
     getAllTarotAnalyses,
-    saveAllTarotAnalyses
+    saveAllTarotAnalyses,
+    checkBirthdays,
+    getClientsWithConsultations
   };
 };
 

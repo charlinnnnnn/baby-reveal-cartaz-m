@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -20,13 +19,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Save, AlertTriangle, Cake } from "lucide-react";
 import { toast } from "sonner";
 import useUserDataService from "@/services/userDataService";
+import BirthdayNotifications from "@/components/BirthdayNotifications";
 
 const NovoAtendimento = () => {
   const navigate = useNavigate();
-  const { getAtendimentos, saveAtendimentos } = useUserDataService();
+  const { getAtendimentos, saveAtendimentos, checkBirthdays } = useUserDataService();
   const [dataNascimento, setDataNascimento] = useState("");
   const [signo, setSigno] = useState("");
   const [atencao, setAtencao] = useState(false);
@@ -60,6 +60,23 @@ const NovoAtendimento = () => {
     });
   };
 
+  const checkIfBirthday = (birthDate: string) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    
+    if (birth.getDate() === today.getDate() && birth.getMonth() === today.getMonth()) {
+      const age = today.getFullYear() - birth.getFullYear();
+      toast.success(
+        `🎉 Hoje é aniversário desta pessoa! ${age} anos`,
+        {
+          duration: 8000,
+          icon: <Cake className="h-5 w-5" />,
+          description: "Não esqueça de parabenizar!"
+        }
+      );
+    }
+  };
+
   const handleDataNascimentoChange = (e) => {
     const value = e.target.value;
     setDataNascimento(value);
@@ -67,6 +84,11 @@ const NovoAtendimento = () => {
       ...formData,
       dataNascimento: value,
     });
+    
+    // Check if it's birthday
+    if (value) {
+      checkIfBirthday(value);
+    }
     
     // Lógica simples para determinar o signo baseado na data de nascimento
     if (value) {
@@ -135,6 +157,8 @@ const NovoAtendimento = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-4">
+      <BirthdayNotifications checkOnMount={false} />
+      
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6 flex items-center">
           <Button 
