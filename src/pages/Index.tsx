@@ -311,7 +311,6 @@ const Index = () => {
 
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-700">Atendimentos Recentes</h3>
-          <ReportManager variant="home" />
         </div>
 
         <Card className="border-blue-100 shadow-md">
@@ -364,6 +363,14 @@ const Index = () => {
                           ) : null}
                         </td>
                         <td className="py-3 px-4 text-center flex justify-center gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="text-[#0EA5E9] hover:bg-blue-100 hover:text-[#0284C7]"
+                            onClick={() => handleEditAtendimento(atendimento.id)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button 
