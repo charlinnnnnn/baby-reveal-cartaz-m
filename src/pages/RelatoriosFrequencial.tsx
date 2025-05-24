@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,8 +79,8 @@ const RelatoriosFrequencial = () => {
       
       // Cabeçalho
       doc.setFontSize(18);
-      doc.setTextColor(14, 165, 233);
-      doc.text(`Relatório Frequencial: ${cliente}`, 105, 15, { align: 'center' });
+      doc.setTextColor(124, 100, 244);
+      doc.text(`🔮 Relatório Tarot Frequencial: ${cliente}`, 105, 15, { align: 'center' });
       
       // Informações do cliente
       doc.setFontSize(14);
@@ -118,7 +119,7 @@ const RelatoriosFrequencial = () => {
         body: tableRows,
         startY: yPos,
         styles: { fontSize: 10, cellPadding: 3 },
-        headerStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255] }
+        headerStyles: { fillColor: [124, 100, 244], textColor: [255, 255, 255] }
       });
       
       // Rodapé
@@ -136,7 +137,7 @@ const RelatoriosFrequencial = () => {
       }
       
       // Forçar o download
-      doc.save(`Relatorio_Frequencial_${cliente.replace(/ /g, '_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
+      doc.save(`Relatorio_Tarot_${cliente.replace(/ /g, '_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
       
       toast({
         title: "Relatório gerado",
@@ -165,21 +166,21 @@ const RelatoriosFrequencial = () => {
   const { finalizados, emAndamento } = getStatusCounts();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
       <BirthdayNotifications />
       
-      <header className="bg-white shadow-md py-4 px-6 border-b border-blue-100">
+      <header className="bg-white shadow-md py-4 px-6 border-b border-purple-100">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <Logo height={70} width={70} />
-            <h1 className="text-2xl font-bold text-[#0EA5E9]">
-              Libertá - Relatórios Frequenciais
+            <h1 className="text-2xl font-bold text-[#7C64F4]">
+              Libertá - Relatórios Tarot Frequencial
             </h1>
           </div>
           <div className="flex gap-2 items-center">
             <Button 
               variant="outline" 
-              className="border-[#0EA5E9] text-[#0EA5E9] hover:bg-blue-50"
+              className="border-[#7C64F4] text-[#7C64F4] hover:bg-purple-50"
               onClick={() => navigate('/')}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -197,10 +198,10 @@ const RelatoriosFrequencial = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Total Recebido</p>
-                  <p className="text-2xl font-bold">R$ {getTotalValue()}</p>
+                  <p className="text-2xl font-bold text-[#7C64F4]">R$ {getTotalValue()}</p>
                 </div>
                 <div className="rounded-full p-3 bg-purple-100">
-                  <DollarSign className="h-8 w-8 text-purple-600" />
+                  <DollarSign className="h-8 w-8 text-[#7C64F4]" />
                 </div>
               </div>
             </CardContent>
@@ -211,7 +212,7 @@ const RelatoriosFrequencial = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Finalizados</p>
-                  <p className="text-2xl font-bold">{finalizados}</p>
+                  <p className="text-2xl font-bold text-green-600">{finalizados}</p>
                 </div>
                 <div className="rounded-full p-3 bg-green-100">
                   <CheckCircle className="h-8 w-8 text-green-600" />
@@ -220,25 +221,25 @@ const RelatoriosFrequencial = () => {
             </CardContent>
           </Card>
           
-          <Card className="border-blue-200 bg-gradient-to-br from-white to-blue-50 shadow-md hover:shadow-lg transition-all">
+          <Card className="border-purple-200 bg-gradient-to-br from-white to-purple-50 shadow-md hover:shadow-lg transition-all">
             <CardContent className="pt-6">
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Em Andamento</p>
-                  <p className="text-2xl font-bold">{emAndamento}</p>
+                  <p className="text-2xl font-bold text-[#7C64F4]">{emAndamento}</p>
                 </div>
-                <div className="rounded-full p-3 bg-blue-100">
-                  <Clock className="h-8 w-8 text-blue-600" />
+                <div className="rounded-full p-3 bg-purple-100">
+                  <Clock className="h-8 w-8 text-[#7C64F4]" />
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Seção de Relatórios */}
-        <Card className="border-blue-100 shadow-md mb-6">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-100">
-            <CardTitle className="text-[#2196F3]">Relatórios de Atendimentos</CardTitle>
+        {/* Seção de Relatórios do Tarot */}
+        <Card className="border-purple-100 shadow-md mb-6">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-white border-b border-purple-100">
+            <CardTitle className="text-[#7C64F4]">Relatórios Tarot Frequencial</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <ReportManager variant="tarot" />
@@ -252,7 +253,7 @@ const RelatoriosFrequencial = () => {
               <Input 
                 type="text" 
                 placeholder="Buscar cliente..." 
-                className="pr-10"
+                className="pr-10 border-purple-200 focus:border-[#7C64F4]"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -263,16 +264,16 @@ const RelatoriosFrequencial = () => {
 
         <Card className="border-purple-100 shadow-md">
           <CardHeader className="bg-gradient-to-r from-purple-50 to-white border-b border-purple-100">
-            <CardTitle className="text-[#9b87f5]">Clientes</CardTitle>
+            <CardTitle className="text-[#7C64F4]">Clientes</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-4 text-[#9b87f5]">Cliente</th>
-                    <th className="text-left py-2 px-4 text-[#9b87f5]">Análises</th>
-                    <th className="text-left py-2 px-4 text-[#9b87f5]">Ações</th>
+                    <th className="text-left py-2 px-4 text-[#7C64F4]">Cliente</th>
+                    <th className="text-left py-2 px-4 text-[#7C64F4]">Análises</th>
+                    <th className="text-left py-2 px-4 text-[#7C64F4]">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -287,7 +288,7 @@ const RelatoriosFrequencial = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-[#9b87f5] text-[#9b87f5] hover:bg-purple-50"
+                            className="border-[#7C64F4] text-[#7C64F4] hover:bg-purple-50"
                             onClick={() => downloadClienteReport(cliente)}
                           >
                             <FileText className="h-4 w-4 mr-2" />
@@ -302,7 +303,7 @@ const RelatoriosFrequencial = () => {
               
               {filteredClientes.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <FileText className="h-16 w-16 text-gray-300 mb-4" />
+                  <FileText className="h-16 w-16 text-purple-300 mb-4" />
                   <h3 className="text-xl font-medium text-gray-600">Nenhum cliente encontrado</h3>
                   <p className="text-gray-500 mt-2">Realize análises para visualizar os relatórios</p>
                 </div>

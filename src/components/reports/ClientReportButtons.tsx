@@ -8,12 +8,19 @@ import { jsPDF } from 'jspdf';
 interface ClientReportButtonsProps {
   clients: Array<{ name: string; count: number }>;
   atendimentos: any[];
+  variant?: 'home' | 'tarot';
 }
 
-const ClientReportButtons: React.FC<ClientReportButtonsProps> = ({ clients, atendimentos }) => {
+const ClientReportButtons: React.FC<ClientReportButtonsProps> = ({ 
+  clients, 
+  atendimentos,
+  variant = 'home'
+}) => {
   const downloadDetailedClientReport = (clientName: string) => {
     try {
-      const clientConsultations = atendimentos.filter(a => a.nome === clientName);
+      const clientConsultations = atendimentos.filter(a => 
+        variant === 'tarot' ? a.nomeCliente === clientName : a.nome === clientName
+      );
       
       if (clientConsultations.length === 0) {
         toast.error("Nenhum atendimento encontrado para este cliente");
@@ -24,8 +31,11 @@ const ClientReportButtons: React.FC<ClientReportButtonsProps> = ({ clients, aten
       
       // Header
       doc.setFontSize(18);
-      doc.setTextColor(14, 165, 233);
-      doc.text(`🔹 Relatório Geral do Cliente: ${clientName}`, 105, 15, { align: 'center' });
+      doc.setTextColor(variant === 'tarot' ? 124, 100, 244 : 14, 165, 233);
+      const reportTitle = variant === 'tarot' ? 
+        `🔮 Relatório Tarot Frequencial: ${clientName}` : 
+        `🔹 Relatório Geral do Cliente: ${clientName}`;
+      doc.text(reportTitle, 105, 15, { align: 'center' });
       
       let yPos = 30;
       
@@ -34,28 +44,43 @@ const ClientReportButtons: React.FC<ClientReportButtonsProps> = ({ clients, aten
       doc.setTextColor(0, 0, 0);
       
       const firstConsultation = clientConsultations[0];
-      if (firstConsultation?.dataNascimento) {
-        doc.text(`Data de Nascimento: ${new Date(firstConsultation.dataNascimento).toLocaleDateString('pt-BR')}`, 14, yPos);
-        yPos += 6;
-      }
       
-      if (firstConsultation?.signo) {
-        doc.text(`Signo: ${firstConsultation.signo}`, 14, yPos);
-        yPos += 6;
+      if (variant === 'tarot') {
+        if (firstConsultation?.signo) {
+          doc.text(`Signo: ${firstConsultation.signo}`, 14, yPos);
+          yPos += 6;
+        }
+        
+        if (firstConsultation?.dataInicio) {
+          doc.text(`Primeira Análise: ${new Date(firstConsultation.dataInicio).toLocaleDateString('pt-BR')}`, 14, yPos);
+          yPos += 6;
+        }
+      } else {
+        if (firstConsultation?.dataNascimento) {
+          doc.text(`Data de Nascimento: ${new Date(firstConsultation.dataNascimento).toLocaleDateString('pt-BR')}`, 14, yPos);
+          yPos += 6;
+        }
+        
+        if (firstConsultation?.signo) {
+          doc.text(`Signo: ${firstConsultation.signo}`, 14, yPos);
+          yPos += 6;
+        }
       }
       
       yPos += 5;
       
       // Statistics
       const totalAtendimentos = clientConsultations.length;
-      const totalValue = clientConsultations.reduce((acc, curr) => acc + parseFloat(curr.valor || "0"), 0);
+      const totalValue = clientConsultations.reduce((acc, curr) => 
+        acc + parseFloat(variant === 'tarot' ? (curr.preco || "150") : (curr.valor || "0")), 0
+      );
       const mediaValue = totalValue / totalAtendimentos;
       
-      doc.text(`Total de Atendimentos: ${totalAtendimentos}`, 14, yPos);
+      doc.text(`Total de ${variant === 'tarot' ? 'Análises' : 'Atendimentos'}: ${totalAtendimentos}`, 14, yPos);
       yPos += 6;
       doc.text(`Valor Total Gasto: R$ ${totalValue.toFixed(2)}`, 14, yPos);
       yPos += 6;
-      doc.text(`Média por Atendimento: R$ ${mediaValue.toFixed(2)}`, 14, yPos);
+      doc.text(`Média por ${variant === 'tarot' ? 'Análise' : 'Atendimento'}: R$ ${mediaValue.toFixed(2)}`, 14, yPos);
       yPos += 10;
       
       // Check for attention flags
@@ -70,68 +95,28 @@ const ClientReportButtons: React.FC<ClientReportButtonsProps> = ({ clients, aten
         yPos += 10;
       }
       
-      // Detailed appointments section
-      doc.setFontSize(14);
-      doc.setTextColor(14, 165, 233);
-      doc.text('🗂️ Detalhes dos Atendimentos:', 14, yPos);
-      yPos += 10;
-      
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
-      
-      clientConsultations.forEach((consultation, index) => {
-        // Check if we need a new page
-        if (yPos > 250) {
-          doc.addPage();
-          yPos = 20;
-        }
+      // Add more details based on variant
+      if (variant === 'tarot') {
+        // Tarot-specific content
+        const finalizadas = clientConsultations.filter(c => c.finalizado).length;
+        const emAndamento = clientConsultations.length - finalizadas;
         
-        // Appointment header
-        const appointmentNumber = `${index + 1}️⃣`;
-        const dataFormatada = consultation.dataAtendimento ? 
-          new Date(consultation.dataAtendimento).toLocaleDateString('pt-BR') : 'N/A';
-        const servicoFormatado = consultation.tipoServico ? 
-          consultation.tipoServico.replace('-', ' ').replace('tarot', 'Tarot').replace('terapia', 'Terapia').replace('mesa radionica', 'Mesa Radiônica') :
-          'N/A';
-        const statusFormatado = consultation.statusPagamento || 'Não especificado';
-        
-        doc.setFont(undefined, 'bold');
-        doc.text(`${appointmentNumber} Data: ${dataFormatada} — 💼 Serviço: ${servicoFormatado} — 💳 Status: ${statusFormatado}`, 14, yPos);
+        doc.text(`Análises Finalizadas: ${finalizadas}`, 14, yPos);
         yPos += 6;
+        doc.text(`Análises em Andamento: ${emAndamento}`, 14, yPos);
+        yPos += 10;
         
-        doc.setFont(undefined, 'normal');
+        // Treatment summary
+        let totalTratamentos = 0;
+        clientConsultations.forEach(consulta => {
+          if (consulta.lembretes && Array.isArray(consulta.lembretes)) {
+            totalTratamentos += consulta.lembretes.filter(l => l.texto && l.texto.trim()).length;
+          }
+        });
         
-        // Details
-        if (consultation.destino) {
-          doc.text(`Destino: ${consultation.destino}`, 14, yPos);
-          yPos += 5;
-        }
-        
-        if (consultation.ano) {
-          doc.text(`Ano: ${consultation.ano}`, 14, yPos);
-          yPos += 5;
-        }
-        
-        if (consultation.detalhes) {
-          const detalhesLines = doc.splitTextToSize(`Detalhes da Sessão: ${consultation.detalhes}`, 180);
-          doc.text(detalhesLines, 14, yPos);
-          yPos += detalhesLines.length * 5;
-        }
-        
-        if (consultation.tratamento) {
-          const tratamentoLines = doc.splitTextToSize(`Tratamento: ${consultation.tratamento}`, 180);
-          doc.text(tratamentoLines, 14, yPos);
-          yPos += tratamentoLines.length * 5;
-        }
-        
-        if (consultation.indicacao) {
-          const indicacaoLines = doc.splitTextToSize(`Indicação: ${consultation.indicacao}`, 180);
-          doc.text(indicacaoLines, 14, yPos);
-          yPos += indicacaoLines.length * 5;
-        }
-        
-        yPos += 8; // Space between appointments
-      });
+        doc.text(`Total de Tratamentos: ${totalTratamentos}`, 14, yPos);
+        yPos += 10;
+      }
       
       // Footer
       const totalPages = doc.getNumberOfPages();
@@ -147,7 +132,8 @@ const ClientReportButtons: React.FC<ClientReportButtonsProps> = ({ clients, aten
         );
       }
       
-      doc.save(`Relatorio_Detalhado_${clientName.replace(/ /g, '_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
+      const filePrefix = variant === 'tarot' ? 'Relatorio_Tarot' : 'Relatorio_Detalhado';
+      doc.save(`${filePrefix}_${clientName.replace(/ /g, '_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
       
       toast.success(`Relatório detalhado de ${clientName} gerado com sucesso!`);
     } catch (error) {
@@ -157,6 +143,10 @@ const ClientReportButtons: React.FC<ClientReportButtonsProps> = ({ clients, aten
   };
 
   if (clients.length === 0) return null;
+
+  const buttonStyle = variant === 'tarot' ? 
+    'border-[#7C64F4] text-[#7C64F4] hover:bg-purple-50' : 
+    'border-[#2196F3] text-[#2196F3] hover:bg-blue-50';
 
   return (
     <div className="mt-4">
@@ -168,7 +158,7 @@ const ClientReportButtons: React.FC<ClientReportButtonsProps> = ({ clients, aten
             onClick={() => downloadDetailedClientReport(client.name)}
             variant="outline"
             size="sm"
-            className="text-xs"
+            className={`text-xs ${buttonStyle}`}
           >
             <User className="h-3 w-3 mr-1" />
             {client.name} ({client.count})

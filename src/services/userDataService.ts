@@ -71,17 +71,35 @@ const useUserDataService = () => {
   const checkBirthdays = () => {
     const atendimentos = getAtendimentos();
     const today = new Date();
-    const todayString = `${today.getDate().toString().padStart(2, '0')}-${(today.getMonth() + 1).toString().padStart(2, '0')}`;
+    console.log('Verificando aniversários para data:', today.toLocaleDateString('pt-BR'));
+    console.log('Total de atendimentos:', atendimentos.length);
     
     const birthdaysToday = atendimentos.filter(atendimento => {
       if (atendimento.dataNascimento) {
-        const birthDate = new Date(atendimento.dataNascimento);
-        const birthString = `${birthDate.getDate().toString().padStart(2, '0')}-${(birthDate.getMonth() + 1).toString().padStart(2, '0')}`;
-        return birthString === todayString;
+        try {
+          const birthDate = new Date(atendimento.dataNascimento);
+          
+          // Verificar se a data é válida
+          if (isNaN(birthDate.getTime())) {
+            console.log(`Data inválida para ${atendimento.nome}: ${atendimento.dataNascimento}`);
+            return false;
+          }
+          
+          const isSameDay = birthDate.getDate() === today.getDate();
+          const isSameMonth = birthDate.getMonth() === today.getMonth();
+          
+          console.log(`Cliente: ${atendimento.nome}, Nascimento: ${birthDate.toLocaleDateString('pt-BR')}, Hoje: ${today.toLocaleDateString('pt-BR')}, Mesmo dia e mês: ${isSameDay && isSameMonth}`);
+          
+          return isSameDay && isSameMonth;
+        } catch (error) {
+          console.error(`Erro ao processar data de nascimento de ${atendimento.nome}:`, error);
+          return false;
+        }
       }
       return false;
     });
 
+    console.log('Aniversários encontrados:', birthdaysToday.map(b => b.nome));
     return birthdaysToday;
   };
 
