@@ -10,8 +10,7 @@ import {
   ArrowLeft,
   Clock,
   CheckCircle,
-  FileDown,
-  Pencil
+  FileDown
 } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import Logo from "@/components/Logo";
@@ -72,55 +71,208 @@ const RelatoriosFrequencial = () => {
     cliente.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const downloadClienteReport = (cliente: string) => {
+  const downloadIndividualClientReport = (cliente: string) => {
     try {
       const doc = new jsPDF();
       const analisesCliente = analises.filter(a => a.nomeCliente === cliente);
       
-      // Cabeçalho
-      doc.setFontSize(18);
-      doc.setTextColor(124, 100, 244);
-      doc.text(`🔮 Relatório Tarot Frequencial: ${cliente}`, 105, 15, { align: 'center' });
-      
-      // Informações do cliente
-      doc.setFontSize(14);
-      doc.setTextColor(0, 0, 0);
-      
-      let yPos = 30;
-      
-      const firstAnalise = analisesCliente[0];
-      if (firstAnalise?.signo) {
-        doc.text(`Signo: ${firstAnalise.signo}`, 14, yPos);
-        yPos += 8;
-      }
-      
-      doc.text(`Total de Análises: ${analisesCliente.length}`, 14, yPos);
-      yPos += 8;
-      
-      const valorTotal = analisesCliente.reduce((acc, curr) => acc + parseFloat(curr.preco || "150"), 0);
-      doc.text(`Valor Total: R$ ${valorTotal.toFixed(2)}`, 14, yPos);
-      yPos += 15;
-      
-      // Tabela de análises
-      const tableColumn = ["Data", "Preço", "Tratamentos", "Status"];
-      const tableRows = analisesCliente.map(a => {
-        const numTratamentos = a.lembretes ? a.lembretes.filter(l => l.texto?.trim()).length : 0;
+      if (analisesCliente.length === 1) {
+        // Relatório Individual – Análise Atual
+        const analise = analisesCliente[0];
         
-        return [
-          a.dataInicio ? new Date(a.dataInicio).toLocaleDateString('pt-BR') : '-',
-          `R$ ${parseFloat(a.preco || "150").toFixed(2)}`,
-          numTratamentos.toString(),
-          a.finalizado ? 'Finalizado' : 'Em Andamento'
-        ];
-      });
-      
-      doc.autoTable({
-        head: [tableColumn],
-        body: tableRows,
-        startY: yPos,
-        styles: { fontSize: 10, cellPadding: 3 },
-        headerStyles: { fillColor: [124, 100, 244], textColor: [255, 255, 255] }
-      });
+        doc.setFontSize(18);
+        doc.setTextColor(124, 100, 244);
+        doc.text('🔮 Relatório Individual – Análise Atual', 105, 15, { align: 'center' });
+        
+        let yPos = 35;
+        
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        
+        doc.setFont(undefined, 'bold');
+        doc.text(`Nome do Cliente: ${cliente}`, 14, yPos);
+        yPos += 8;
+        
+        if (analise.dataNascimento) {
+          doc.text(`Data de Nascimento: ${new Date(analise.dataNascimento).toLocaleDateString('pt-BR')}`, 14, yPos);
+          yPos += 8;
+        }
+        
+        if (analise.signo) {
+          doc.text(`Signo: ${analise.signo}`, 14, yPos);
+          yPos += 8;
+        }
+        
+        if (analise.dataInicio) {
+          doc.text(`Data da Análise: ${new Date(analise.dataInicio).toLocaleDateString('pt-BR')}`, 14, yPos);
+          yPos += 8;
+        }
+        
+        doc.text(`Valor da Análise: R$ ${parseFloat(analise.preco || "150").toFixed(2)}`, 14, yPos);
+        yPos += 15;
+        
+        doc.setFont(undefined, 'normal');
+        
+        // Análise – Antes
+        if (analise.analiseAntes) {
+          doc.setFont(undefined, 'bold');
+          doc.text('Análise – Antes', 14, yPos);
+          yPos += 8;
+          doc.setFont(undefined, 'normal');
+          const antesLines = doc.splitTextToSize(analise.analiseAntes, 180);
+          doc.text(antesLines, 14, yPos);
+          yPos += antesLines.length * 6 + 10;
+        }
+        
+        // Análise – Depois
+        if (analise.analiseDepois) {
+          doc.setFont(undefined, 'bold');
+          doc.text('Análise – Depois', 14, yPos);
+          yPos += 8;
+          doc.setFont(undefined, 'normal');
+          const depoisLines = doc.splitTextToSize(analise.analiseDepois, 180);
+          doc.text(depoisLines, 14, yPos);
+          yPos += depoisLines.length * 6 + 10;
+        }
+        
+        // Tratamento Realizado
+        if (analise.lembretes && analise.lembretes.length > 0) {
+          doc.setFont(undefined, 'bold');
+          doc.text('Tratamento Realizado', 14, yPos);
+          yPos += 8;
+          doc.setFont(undefined, 'normal');
+          
+          analise.lembretes.forEach(lembrete => {
+            if (lembrete.texto && lembrete.texto.trim()) {
+              const tratamentoLines = doc.splitTextToSize(lembrete.texto, 180);
+              doc.text(tratamentoLines, 14, yPos);
+              yPos += tratamentoLines.length * 6 + 5;
+            }
+          });
+        }
+      } else {
+        // Relatório Geral do Cliente – Histórico Consolidado
+        const firstAnalise = analisesCliente[0];
+        const lastAnalise = analisesCliente[analisesCliente.length - 1];
+        const valorTotal = analisesCliente.reduce((acc, curr) => acc + parseFloat(curr.preco || "150"), 0);
+        const mediaValor = valorTotal / analisesCliente.length;
+        
+        doc.setFontSize(18);
+        doc.setTextColor(124, 100, 244);
+        doc.text('🔮 Relatório Geral do Cliente – Histórico Consolidado', 105, 15, { align: 'center' });
+        
+        let yPos = 35;
+        
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        
+        doc.setFont(undefined, 'bold');
+        doc.text(`Nome do Cliente: ${cliente}`, 14, yPos);
+        yPos += 8;
+        
+        if (firstAnalise.dataNascimento) {
+          doc.text(`Data de Nascimento: ${new Date(firstAnalise.dataNascimento).toLocaleDateString('pt-BR')}`, 14, yPos);
+          yPos += 8;
+        }
+        
+        if (firstAnalise.signo) {
+          doc.text(`Signo: ${firstAnalise.signo}`, 14, yPos);
+          yPos += 8;
+        }
+        
+        if (firstAnalise.dataInicio) {
+          doc.text(`Data da Primeira Análise: ${new Date(firstAnalise.dataInicio).toLocaleDateString('pt-BR')}`, 14, yPos);
+          yPos += 8;
+        }
+        
+        if (lastAnalise.dataInicio) {
+          doc.text(`Data da Última Análise: ${new Date(lastAnalise.dataInicio).toLocaleDateString('pt-BR')}`, 14, yPos);
+          yPos += 8;
+        }
+        
+        doc.text(`Total de Análises Realizadas: ${analisesCliente.length}`, 14, yPos);
+        yPos += 8;
+        
+        doc.text(`Valor Total Investido: R$ ${valorTotal.toFixed(2)}`, 14, yPos);
+        yPos += 8;
+        
+        doc.text(`Média por Análise: R$ ${mediaValor.toFixed(2)}`, 14, yPos);
+        yPos += 15;
+        
+        doc.setFont(undefined, 'normal');
+        
+        // Resumo das Análises
+        doc.setFont(undefined, 'bold');
+        doc.text('Resumo das Análises', 14, yPos);
+        yPos += 10;
+        doc.setFont(undefined, 'normal');
+        
+        analisesCliente.forEach((analise, index) => {
+          if (yPos > 220) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          doc.setFont(undefined, 'bold');
+          doc.text(`Análise ${index + 1}:`, 14, yPos);
+          yPos += 8;
+          doc.setFont(undefined, 'normal');
+          
+          if (analise.dataInicio) {
+            doc.text(`Data: ${new Date(analise.dataInicio).toLocaleDateString('pt-BR')}`, 14, yPos);
+            yPos += 6;
+          }
+          
+          if (analise.analiseAntes) {
+            doc.text('Antes:', 14, yPos);
+            yPos += 6;
+            const antesLines = doc.splitTextToSize(analise.analiseAntes, 170);
+            doc.text(antesLines, 14, yPos);
+            yPos += antesLines.length * 5 + 5;
+          }
+          
+          if (analise.analiseDepois) {
+            doc.text('Depois:', 14, yPos);
+            yPos += 6;
+            const depoisLines = doc.splitTextToSize(analise.analiseDepois, 170);
+            doc.text(depoisLines, 14, yPos);
+            yPos += depoisLines.length * 5 + 5;
+          }
+          
+          if (analise.lembretes && analise.lembretes.length > 0) {
+            const tratamentos = analise.lembretes.filter(l => l.texto?.trim());
+            if (tratamentos.length > 0) {
+              doc.text('Tratamento:', 14, yPos);
+              yPos += 6;
+              tratamentos.forEach(lembrete => {
+                const tratamentoLines = doc.splitTextToSize(lembrete.texto, 170);
+                doc.text(tratamentoLines, 14, yPos);
+                yPos += tratamentoLines.length * 5;
+              });
+              yPos += 5;
+            }
+          }
+          
+          yPos += 10;
+        });
+        
+        // Observações Gerais
+        if (yPos > 200) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFont(undefined, 'bold');
+        doc.text('Observações Gerais', 14, yPos);
+        yPos += 10;
+        doc.setFont(undefined, 'normal');
+        
+        doc.text('• Evolução observada nas análises.', 14, yPos);
+        yPos += 6;
+        doc.text('• Padrões recorrentes nas descrições de "Antes" e "Depois".', 14, yPos);
+        yPos += 6;
+        doc.text('• Frequência dos retornos com base no campo "Avisar daqui a [X] dias".', 14, yPos);
+      }
       
       // Rodapé
       const totalPages = doc.getNumberOfPages();
@@ -136,8 +288,8 @@ const RelatoriosFrequencial = () => {
         );
       }
       
-      // Forçar o download
-      doc.save(`Relatorio_Tarot_${cliente.replace(/ /g, '_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
+      const tipoRelatorio = analisesCliente.length === 1 ? 'Individual' : 'Geral';
+      doc.save(`Relatorio_${tipoRelatorio}_${cliente.replace(/ /g, '_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
       
       toast({
         title: "Relatório gerado",
@@ -289,7 +441,7 @@ const RelatoriosFrequencial = () => {
                             size="sm"
                             variant="outline"
                             className="border-[#7C64F4] text-[#7C64F4] hover:bg-purple-50"
-                            onClick={() => downloadClienteReport(cliente)}
+                            onClick={() => downloadIndividualClientReport(cliente)}
                           >
                             <FileText className="h-4 w-4 mr-2" />
                             Baixar Relatório

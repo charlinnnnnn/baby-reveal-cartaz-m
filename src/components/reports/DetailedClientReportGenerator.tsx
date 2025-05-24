@@ -16,6 +16,179 @@ const DetailedClientReportGenerator: React.FC<DetailedClientReportGeneratorProps
   clients,
   variant = 'home'
 }) => {
+  const downloadAllDetailedReports = () => {
+    try {
+      if (variant === 'tarot') {
+        // Para tarot, gera um relatório geral consolidado
+        generateTarotGeneralReport();
+      } else {
+        // Para home, gera relatórios individuais para cada cliente
+        clients.forEach((client, index) => {
+          setTimeout(() => {
+            downloadDetailedClientReport(client.name);
+          }, index * 1000);
+        });
+        
+        toast.success(`Gerando ${clients.length} relatórios individuais detalhados...`);
+      }
+    } catch (error) {
+      console.error("Erro ao gerar relatórios:", error);
+      toast.error("Erro ao gerar relatórios");
+    }
+  };
+
+  const generateTarotGeneralReport = () => {
+    const doc = new jsPDF();
+    
+    // Relatório Geral do Cliente – Histórico Consolidado
+    doc.setFontSize(18);
+    doc.setTextColor(124, 100, 244);
+    doc.text('🔮 Relatório Geral do Cliente – Histórico Consolidado', 105, 15, { align: 'center' });
+    
+    let yPos = 35;
+    
+    // Agrupa análises por cliente
+    const clientsMap = new Map();
+    atendimentos.forEach(analise => {
+      const clientName = analise.nomeCliente;
+      if (!clientsMap.has(clientName)) {
+        clientsMap.set(clientName, []);
+      }
+      clientsMap.get(clientName).push(analise);
+    });
+
+    // Para cada cliente, gera o relatório
+    Array.from(clientsMap.entries()).forEach(([clientName, consultations], clientIndex) => {
+      if (clientIndex > 0) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      const firstConsultation = consultations[0];
+      const lastConsultation = consultations[consultations.length - 1];
+      const totalValue = consultations.reduce((acc, curr) => acc + parseFloat(curr.preco || "150"), 0);
+      const avgValue = totalValue / consultations.length;
+      
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      
+      doc.setFont(undefined, 'bold');
+      doc.text(`Nome do Cliente: ${clientName}`, 14, yPos);
+      yPos += 8;
+      
+      if (firstConsultation.dataNascimento) {
+        doc.text(`Data de Nascimento: ${new Date(firstConsultation.dataNascimento).toLocaleDateString('pt-BR')}`, 14, yPos);
+        yPos += 8;
+      }
+      
+      if (firstConsultation.signo) {
+        doc.text(`Signo: ${firstConsultation.signo}`, 14, yPos);
+        yPos += 8;
+      }
+      
+      if (firstConsultation.dataInicio) {
+        doc.text(`Data da Primeira Análise: ${new Date(firstConsultation.dataInicio).toLocaleDateString('pt-BR')}`, 14, yPos);
+        yPos += 8;
+      }
+      
+      if (lastConsultation.dataInicio) {
+        doc.text(`Data da Última Análise: ${new Date(lastConsultation.dataInicio).toLocaleDateString('pt-BR')}`, 14, yPos);
+        yPos += 8;
+      }
+      
+      doc.text(`Total de Análises Realizadas: ${consultations.length}`, 14, yPos);
+      yPos += 8;
+      
+      doc.text(`Valor Total Investido: R$ ${totalValue.toFixed(2)}`, 14, yPos);
+      yPos += 8;
+      
+      doc.text(`Média por Análise: R$ ${avgValue.toFixed(2)}`, 14, yPos);
+      yPos += 15;
+      
+      doc.setFont(undefined, 'normal');
+      
+      // Resumo das Análises
+      doc.setFont(undefined, 'bold');
+      doc.text('Resumo das Análises', 14, yPos);
+      yPos += 10;
+      doc.setFont(undefined, 'normal');
+      
+      consultations.forEach((consultation, index) => {
+        if (yPos > 220) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFont(undefined, 'bold');
+        doc.text(`Análise ${index + 1}:`, 14, yPos);
+        yPos += 8;
+        doc.setFont(undefined, 'normal');
+        
+        if (consultation.dataInicio) {
+          doc.text(`Data: ${new Date(consultation.dataInicio).toLocaleDateString('pt-BR')}`, 14, yPos);
+          yPos += 6;
+        }
+        
+        if (consultation.analiseAntes) {
+          doc.text('Antes:', 14, yPos);
+          yPos += 6;
+          const antesLines = doc.splitTextToSize(consultation.analiseAntes, 170);
+          doc.text(antesLines, 14, yPos);
+          yPos += antesLines.length * 5 + 5;
+        }
+        
+        if (consultation.analiseDepois) {
+          doc.text('Depois:', 14, yPos);
+          yPos += 6;
+          const depoisLines = doc.splitTextToSize(consultation.analiseDepois, 170);
+          doc.text(depoisLines, 14, yPos);
+          yPos += depoisLines.length * 5 + 5;
+        }
+        
+        if (consultation.lembretes && consultation.lembretes.length > 0) {
+          const tratamentos = consultation.lembretes.filter(l => l.texto?.trim());
+          if (tratamentos.length > 0) {
+            doc.text('Tratamento:', 14, yPos);
+            yPos += 6;
+            tratamentos.forEach(lembrete => {
+              const tratamentoLines = doc.splitTextToSize(lembrete.texto, 170);
+              doc.text(tratamentoLines, 14, yPos);
+              yPos += tratamentoLines.length * 5;
+            });
+            yPos += 5;
+          }
+        }
+        
+        yPos += 10;
+      });
+      
+      // Observações Gerais
+      if (yPos > 200) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFont(undefined, 'bold');
+      doc.text('Observações Gerais', 14, yPos);
+      yPos += 10;
+      doc.setFont(undefined, 'normal');
+      
+      doc.text('• Evolução observada nas análises.', 14, yPos);
+      yPos += 6;
+      doc.text('• Padrões recorrentes nas descrições de "Antes" e "Depois".', 14, yPos);
+      yPos += 6;
+      doc.text('• Frequência dos retornos com base no campo "Avisar daqui a [X] dias".', 14, yPos);
+      yPos += 15;
+    });
+    
+    addFooter(doc);
+    
+    const fileName = `Relatorio_Geral_Consolidado_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
+    doc.save(fileName);
+    
+    toast.success("Relatório geral consolidado gerado com sucesso!");
+  };
+
   const downloadDetailedClientReport = (clientName: string) => {
     try {
       const clientConsultations = atendimentos.filter(a => 
@@ -40,7 +213,7 @@ const DetailedClientReportGenerator: React.FC<DetailedClientReportGeneratorProps
       }
       
       const filePrefix = variant === 'tarot' ? 
-        (clientConsultations.length === 1 ? 'Relatorio_Individual_Tarot_Detalhado' : 'Relatorio_Geral_Tarot_Detalhado') : 
+        (clientConsultations.length === 1 ? 'Relatorio_Individual_Tarot' : 'Relatorio_Geral_Tarot') : 
         'Relatorio_Detalhado';
       doc.save(`${filePrefix}_${clientName.replace(/ /g, '_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
       
@@ -52,9 +225,10 @@ const DetailedClientReportGenerator: React.FC<DetailedClientReportGeneratorProps
   };
 
   const generateIndividualTarotReport = (doc, consultation, clientName) => {
+    // Relatório Individual – Análise Atual
     doc.setFontSize(18);
     doc.setTextColor(124, 100, 244);
-    doc.text('🔮 Relatório Individual – Análise Atual (Detalhado)', 105, 15, { align: 'center' });
+    doc.text('🔮 Relatório Individual – Análise Atual', 105, 15, { align: 'center' });
     
     let yPos = 35;
     
@@ -85,6 +259,7 @@ const DetailedClientReportGenerator: React.FC<DetailedClientReportGeneratorProps
     
     doc.setFont(undefined, 'normal');
     
+    // Análise – Antes
     if (consultation.analiseAntes) {
       doc.setFont(undefined, 'bold');
       doc.text('Análise – Antes', 14, yPos);
@@ -95,6 +270,7 @@ const DetailedClientReportGenerator: React.FC<DetailedClientReportGeneratorProps
       yPos += antesLines.length * 6 + 10;
     }
     
+    // Análise – Depois
     if (consultation.analiseDepois) {
       doc.setFont(undefined, 'bold');
       doc.text('Análise – Depois', 14, yPos);
@@ -105,24 +281,18 @@ const DetailedClientReportGenerator: React.FC<DetailedClientReportGeneratorProps
       yPos += depoisLines.length * 6 + 10;
     }
     
+    // Tratamento Realizado
     if (consultation.lembretes && consultation.lembretes.length > 0) {
       doc.setFont(undefined, 'bold');
       doc.text('Tratamento Realizado', 14, yPos);
       yPos += 8;
       doc.setFont(undefined, 'normal');
       
-      consultation.lembretes.forEach((lembrete, index) => {
+      consultation.lembretes.forEach(lembrete => {
         if (lembrete.texto && lembrete.texto.trim()) {
-          doc.text(`${index + 1}. ${lembrete.texto}`, 14, yPos);
-          yPos += 6;
-          
-          if (lembrete.dias) {
-            doc.setFont(undefined, 'bold');
-            doc.text('Próximo Aviso:', 20, yPos);
-            doc.setFont(undefined, 'normal');
-            doc.text(`Recomendar reavaliação em ${lembrete.dias} dias.`, 80, yPos);
-            yPos += 10;
-          }
+          const tratamentoLines = doc.splitTextToSize(lembrete.texto, 180);
+          doc.text(tratamentoLines, 14, yPos);
+          yPos += tratamentoLines.length * 6 + 5;
         }
       });
     }
@@ -399,28 +569,13 @@ const DetailedClientReportGenerator: React.FC<DetailedClientReportGeneratorProps
     }
   };
 
-  const downloadAllIndividualReports = () => {
-    try {
-      clients.forEach((client, index) => {
-        setTimeout(() => {
-          downloadDetailedClientReport(client.name);
-        }, index * 1000);
-      });
-      
-      toast.success(`Gerando ${clients.length} relatórios individuais detalhados...`);
-    } catch (error) {
-      console.error("Erro ao gerar relatórios:", error);
-      toast.error("Erro ao gerar relatórios");
-    }
-  };
-
   const buttonColor = variant === 'tarot' ? 
     'border-[#7C64F4] text-[#7C64F4] hover:bg-purple-50' : 
     'border-[#2196F3] text-[#2196F3] hover:bg-blue-50';
 
   return (
     <Button
-      onClick={downloadAllIndividualReports}
+      onClick={downloadAllDetailedReports}
       variant="outline"
       className={buttonColor}
     >
