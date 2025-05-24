@@ -50,7 +50,10 @@ const EditarAtendimento = () => {
 
   useEffect(() => {
     const carregarAtendimento = () => {
+      console.log('EditarAtendimento - ID recebido:', id);
+      
       if (!id) {
+        console.error('ID do atendimento não fornecido');
         toast.error("ID do atendimento não fornecido");
         navigate('/');
         return;
@@ -58,10 +61,14 @@ const EditarAtendimento = () => {
 
       try {
         const atendimentos = getAtendimentos();
+        console.log('EditarAtendimento - Total de atendimentos:', atendimentos.length);
+        console.log('EditarAtendimento - Atendimentos disponíveis:', atendimentos);
+        
         const atendimento = atendimentos.find(a => a.id === id);
+        console.log('EditarAtendimento - Atendimento encontrado:', atendimento);
         
         if (atendimento) {
-          setFormData({
+          const dadosCarregados = {
             nome: atendimento.nome || "",
             dataNascimento: atendimento.dataNascimento || "",
             tipoServico: atendimento.tipoServico || "",
@@ -76,8 +83,12 @@ const EditarAtendimento = () => {
             indicacao: atendimento.indicacao || "",
             signo: atendimento.signo || "",
             atencaoFlag: Boolean(atendimento.atencaoFlag),
-          });
+          };
+          
+          console.log('EditarAtendimento - Dados carregados no formulário:', dadosCarregados);
+          setFormData(dadosCarregados);
         } else {
+          console.error('Atendimento não encontrado com ID:', id);
           toast.error("Atendimento não encontrado");
           navigate('/');
         }

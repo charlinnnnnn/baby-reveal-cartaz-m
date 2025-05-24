@@ -165,7 +165,24 @@ const Index = () => {
   };
 
   const handleEditAtendimento = (id: string) => {
-    navigate(`/editar-atendimento/${id}`);
+    console.log('Tentando editar atendimento com ID:', id);
+    console.log('Atendimentos disponíveis:', atendimentos);
+    
+    // Verificar se o atendimento existe
+    const atendimentoExiste = atendimentos.find(a => a.id === id);
+    console.log('Atendimento encontrado:', atendimentoExiste);
+    
+    if (atendimentoExiste) {
+      console.log('Navegando para editar atendimento:', `/editar-atendimento/${id}`);
+      navigate(`/editar-atendimento/${id}`);
+    } else {
+      console.error('Atendimento não encontrado!');
+      toast({
+        title: "Erro",
+        description: "Atendimento não encontrado.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleExcluirAtendimento = () => {
@@ -367,7 +384,10 @@ const Index = () => {
                             size="sm" 
                             variant="ghost" 
                             className="text-[#0EA5E9] hover:bg-blue-100 hover:text-[#0284C7]"
-                            onClick={() => handleEditAtendimento(atendimento.id)}
+                            onClick={() => {
+                              console.log('Botão de editar clicado para ID:', atendimento.id);
+                              handleEditAtendimento(atendimento.id);
+                            }}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>

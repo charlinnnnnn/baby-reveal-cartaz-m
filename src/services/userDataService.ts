@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 
 // Service to handle user-specific data
@@ -6,12 +5,16 @@ const useUserDataService = () => {
   const { currentUser } = useAuth();
   
   const getUserId = () => {
-    return currentUser?.id || 'guest';
+    const userId = currentUser?.id || 'guest';
+    console.log('UserDataService - getUserId retornando:', userId);
+    return userId;
   };
   
   // Save atendimentos with user ID
   const saveAtendimentos = (atendimentos: any[]) => {
     const userId = getUserId();
+    console.log('UserDataService - Salvando atendimentos para usuário:', userId);
+    console.log('UserDataService - Quantidade de atendimentos a salvar:', atendimentos.length);
     
     // Get all user data
     const allUserData = JSON.parse(localStorage.getItem('userData') || '{}');
@@ -24,13 +27,20 @@ const useUserDataService = () => {
     
     // Save back to localStorage
     localStorage.setItem('userData', JSON.stringify(allUserData));
+    console.log('UserDataService - Dados salvos com sucesso');
   };
   
   // Get atendimentos for current user
   const getAtendimentos = () => {
     const userId = getUserId();
     const allUserData = JSON.parse(localStorage.getItem('userData') || '{}');
-    return (allUserData[userId]?.atendimentos || []);
+    const atendimentos = (allUserData[userId]?.atendimentos || []);
+    
+    console.log('UserDataService - Carregando atendimentos para usuário:', userId);
+    console.log('UserDataService - Atendimentos encontrados:', atendimentos.length);
+    console.log('UserDataService - Dados completos:', atendimentos);
+    
+    return atendimentos;
   };
   
   // Save tarot analyses with user ID
