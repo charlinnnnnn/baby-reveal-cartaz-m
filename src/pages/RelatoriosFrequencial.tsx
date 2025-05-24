@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,9 @@ import {
   ArrowLeft,
   Clock,
   CheckCircle,
-  FileDown
+  FileDown,
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import Logo from "@/components/Logo";
@@ -51,6 +52,7 @@ const RelatoriosFrequencial = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [analises, setAnalises] = useState<AnaliseFrequencial[]>([]);
   const [clientesUnicos, setClientesUnicos] = useState<string[]>([]);
+  const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const { getAllTarotAnalyses } = useUserDataService();
   const { toast } = useToast();
 
@@ -71,6 +73,116 @@ const RelatoriosFrequencial = () => {
   const filteredClientes = clientesUnicos.filter(cliente =>
     cliente.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const getAnalisesByClient = (cliente: string) => {
+    return analises.filter(a => a.nomeCliente === cliente);
+  };
+
+  const downloadIndividualAnalysisReport = (analise: AnaliseFrequencial) => {
+    try {
+      const doc = new jsPDF();
+      
+      doc.setFontSize(18);
+      doc.setTextColor(124, 100, 244);
+      doc.text('Relatório Individual – Análise Atual', 105, 15, { align: 'center' });
+      
+      let yPos = 35;
+      
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      
+      doc.setFont(undefined, 'bold');
+      doc.text(`Nome do Cliente: ${analise.nomeCliente}`, 14, yPos);
+      yPos += 8;
+      
+      if (analise.dataNascimento) {
+        doc.text(`Data de Nascimento: ${new Date(analise.dataNascimento).toLocaleDateString('pt-BR')}`, 14, yPos);
+        yPos += 8;
+      }
+      
+      if (analise.signo) {
+        doc.text(`Signo: ${analise.signo}`, 14, yPos);
+        yPos += 8;
+      }
+      
+      if (analise.dataInicio) {
+        doc.text(`Data da Análise: ${new Date(analise.dataInicio).toLocaleDateString('pt-BR')}`, 14, yPos);
+        yPos += 8;
+      }
+      
+      doc.text(`Valor da Análise: R$ ${parseFloat(analise.preco || "150").toFixed(2)}`, 14, yPos);
+      yPos += 15;
+      
+      doc.setFont(undefined, 'normal');
+      
+      // Análise – Antes
+      if (analise.analiseAntes) {
+        doc.setFont(undefined, 'bold');
+        doc.text('Análise – Antes', 14, yPos);
+        yPos += 8;
+        doc.setFont(undefined, 'normal');
+        const antesLines = doc.splitTextToSize(analise.analiseAntes, 180);
+        doc.text(antesLines, 14, yPos);
+        yPos += antesLines.length * 6 + 10;
+      }
+      
+      // Análise – Depois
+      if (analise.analiseDepois) {
+        doc.setFont(undefined, 'bold');
+        doc.text('Análise – Depois', 14, yPos);
+        yPos += 8;
+        doc.setFont(undefined, 'normal');
+        const depoisLines = doc.splitTextToSize(analise.analiseDepois, 180);
+        doc.text(depoisLines, 14, yPos);
+        yPos += depoisLines.length * 6 + 10;
+      }
+      
+      // Tratamento Realizado
+      if (analise.lembretes && analise.lembretes.length > 0) {
+        doc.setFont(undefined, 'bold');
+        doc.text('Tratamento Realizado', 14, yPos);
+        yPos += 8;
+        doc.setFont(undefined, 'normal');
+        
+        analise.lembretes.forEach(lembrete => {
+          if (lembrete.texto && lembrete.texto.trim()) {
+            const tratamentoLines = doc.splitTextToSize(lembrete.texto, 180);
+            doc.text(tratamentoLines, 14, yPos);
+            yPos += tratamentoLines.length * 6 + 5;
+          }
+        });
+      }
+      
+      // Rodapé
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text(
+          `Libertá - Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} - Página ${i} de ${totalPages}`,
+          105,
+          doc.internal.pageSize.height - 10,
+          { align: 'center' }
+        );
+      }
+      
+      const dataAnalise = analise.dataInicio ? new Date(analise.dataInicio).toLocaleDateString('pt-BR').replace(/\//g, '-') : new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+      doc.save(`Relatório_${analise.nomeCliente.replace(/ /g, '_')}_${dataAnalise}.pdf`);
+      
+      toast({
+        title: "Relatório gerado",
+        description: "O relatório da análise foi baixado com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao baixar relatório",
+        description: "Ocorreu um erro ao gerar o arquivo PDF.",
+      });
+    }
+  };
 
   const downloadIndividualClientReport = (cliente: string) => {
     try {
@@ -420,39 +532,75 @@ const RelatoriosFrequencial = () => {
             <CardTitle className="text-[#7C64F4]">Clientes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-4 text-[#7C64F4]">Cliente</th>
-                    <th className="text-left py-2 px-4 text-[#7C64F4]">Análises</th>
-                    <th className="text-left py-2 px-4 text-[#7C64F4]">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredClientes.map(cliente => {
-                    const analisesCliente = analises.filter(a => a.nomeCliente === cliente);
+            <div className="space-y-2">
+              {filteredClientes.map(cliente => {
+                const analisesCliente = getAnalisesByClient(cliente);
+                const isExpanded = expandedClient === cliente;
+                
+                return (
+                  <div key={cliente} className="border border-purple-100 rounded-lg">
+                    {/* Header do cliente */}
+                    <div 
+                      className="p-4 hover:bg-purple-50 cursor-pointer flex justify-between items-center"
+                      onClick={() => setExpandedClient(isExpanded ? null : cliente)}
+                    >
+                      <div className="flex items-center gap-3">
+                        {isExpanded ? (
+                          <ChevronDown className="h-5 w-5 text-purple-600" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5 text-purple-600" />
+                        )}
+                        <span className="font-medium text-gray-800">{cliente}</span>
+                        <span className="text-sm text-gray-500">({analisesCliente.length} análises)</span>
+                      </div>
+                    </div>
                     
-                    return (
-                      <tr key={cliente} className="hover:bg-purple-50">
-                        <td className="py-3 px-4">{cliente}</td>
-                        <td className="py-3 px-4">{analisesCliente.length}</td>
-                        <td className="py-3 px-4">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-[#7C64F4] text-[#7C64F4] hover:bg-purple-50"
-                            onClick={() => downloadIndividualClientReport(cliente)}
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Baixar Relatório
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    {/* Lista de análises expandida */}
+                    {isExpanded && (
+                      <div className="border-t border-purple-100 bg-purple-25">
+                        <div className="p-4">
+                          <h4 className="font-medium text-gray-700 mb-3">Análises realizadas:</h4>
+                          <div className="space-y-3">
+                            {analisesCliente.map((analise, index) => (
+                              <div key={analise.id} className="bg-white border border-purple-100 rounded-md p-3">
+                                <div className="flex justify-between items-center">
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-sm font-medium text-gray-700">
+                                      Análise {index + 1}
+                                    </span>
+                                    <span className="text-sm text-gray-500">
+                                      Data: {analise.dataInicio ? new Date(analise.dataInicio).toLocaleDateString('pt-BR') : 'N/A'}
+                                    </span>
+                                    <span className="text-sm text-green-600 font-medium">
+                                      Valor: R$ {parseFloat(analise.preco || "150").toFixed(2)}
+                                    </span>
+                                    <span className={`text-xs px-2 py-1 rounded-full inline-block w-fit ${
+                                      analise.finalizado 
+                                        ? 'bg-green-100 text-green-700' 
+                                        : 'bg-yellow-100 text-yellow-700'
+                                    }`}>
+                                      {analise.finalizado ? 'Finalizada' : 'Em andamento'}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-[#7C64F4] text-[#7C64F4] hover:bg-purple-50"
+                                    onClick={() => downloadIndividualAnalysisReport(analise)}
+                                  >
+                                    <FileDown className="h-4 w-4 mr-2" />
+                                    Baixar Relatório
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               
               {filteredClientes.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
