@@ -175,7 +175,7 @@ const ReportManager: React.FC<ReportManagerProps> = ({ variant = 'home' }) => {
       clients.forEach((client, index) => {
         setTimeout(() => {
           downloadClientReport(client.name);
-        }, index * 1000); // Delay to avoid overwhelming the browser
+        }, index * 1000);
       });
       
       toast.success(`Gerando ${clients.length} relatórios individuais...`);

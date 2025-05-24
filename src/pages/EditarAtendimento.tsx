@@ -20,13 +20,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, AlertTriangle, FileText, Download } from "lucide-react";
+import { ArrowLeft, Save, AlertTriangle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import useUserDataService from "@/services/userDataService";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import BirthdayChecker from "@/components/BirthdayChecker";
 
-// Add the type declaration for jsPDF with autoTable
 declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
@@ -38,12 +38,12 @@ const EditarAtendimento = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { getAtendimentos, saveAtendimentos } = useUserDataService();
-  const [dataNascimento, setDataNascimento] = useState("");
-  const [signo, setSigno] = useState("");
   const [atencao, setAtencao] = useState(false);
   const [formData, setFormData] = useState({
+    id: "",
     nome: "",
     dataNascimento: "",
+    signo: "",
     tipoServico: "",
     statusPagamento: "",
     dataAtendimento: "",
@@ -54,17 +54,33 @@ const EditarAtendimento = () => {
     detalhes: "",
     tratamento: "",
     indicacao: "",
+    atencaoFlag: false,
+    data: ""
   });
 
   useEffect(() => {
-    // Carregar os dados do atendimento existente usando o userDataService
     const atendimentos = getAtendimentos();
     const atendimento = atendimentos.find(item => item.id === id);
     
     if (atendimento) {
-      setFormData(atendimento);
-      setDataNascimento(atendimento.dataNascimento || "");
-      setSigno(atendimento.signo || "");
+      setFormData({
+        id: atendimento.id || "",
+        nome: atendimento.nome || "",
+        dataNascimento: atendimento.dataNascimento || "",
+        signo: atendimento.signo || "",
+        tipoServico: atendimento.tipoServico || "",
+        statusPagamento: atendimento.statusPagamento || "",
+        dataAtendimento: atendimento.dataAtendimento || "",
+        valor: atendimento.valor || "",
+        destino: atendimento.destino || "",
+        ano: atendimento.ano || "",
+        atencaoNota: atendimento.atencaoNota || "",
+        detalhes: atendimento.detalhes || "",
+        tratamento: atendimento.tratamento || "",
+        indicacao: atendimento.indicacao || "",
+        atencaoFlag: atendimento.atencaoFlag || false,
+        data: atendimento.data || ""
+      });
       setAtencao(atendimento.atencaoFlag || false);
     } else {
       toast.error("Atendimento não encontrado");
@@ -72,30 +88,19 @@ const EditarAtendimento = () => {
     }
   }, [id, navigate, getAtendimentos]);
 
-  const handleInputChange = (e) => {
-    const { id, value } = e.target;
-    setFormData({
-      ...formData,
-      [id]: value,
-    });
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  const handleSelectChange = (field, value) => {
-    setFormData({
-      ...formData,
-      [field]: value,
-    });
-  };
-
-  const handleDataNascimentoChange = (e) => {
-    const value = e.target.value;
-    setDataNascimento(value);
-    setFormData({
-      ...formData,
-      dataNascimento: value,
-    });
+  const handleDataNascimentoChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      dataNascimento: value
+    }));
     
-    // Lógica simples para determinar o signo baseado na data de nascimento
     if (value) {
       const date = new Date(value);
       const month = date.getMonth() + 1;
@@ -115,28 +120,26 @@ const EditarAtendimento = () => {
       else if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) signoCalculado = "Aquário";
       else signoCalculado = "Peixes";
       
-      setSigno(signoCalculado);
       setFormData(prev => ({
         ...prev,
         signo: signoCalculado
       }));
-    } else {
-      setSigno("");
     }
   };
 
   const handleSaveAtendimento = () => {
+    if (!formData.nome.trim()) {
+      toast.error("Nome do cliente é obrigatório");
+      return;
+    }
+
     const atendimentos = getAtendimentos();
     const index = atendimentos.findIndex(item => item.id === id);
     
     if (index !== -1) {
       const updatedAtendimento = {
         ...formData,
-        signo,
         atencaoFlag: atencao,
-        // Preservar o ID e data original
-        id,
-        data: atendimentos[index].data,
       };
       
       atendimentos[index] = updatedAtendimento;
@@ -149,8 +152,7 @@ const EditarAtendimento = () => {
     }
   };
 
-  // Helper function to get status color
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "pago":
         return "bg-green-500 text-white border-green-600";
@@ -167,12 +169,10 @@ const EditarAtendimento = () => {
     try {
       const doc = new jsPDF();
       
-      // Add header
       doc.setFontSize(18);
-      doc.setTextColor(14, 165, 233); // Cor azul do Libertá
+      doc.setTextColor(14, 165, 233);
       doc.text(`Relatório de Atendimento: ${formData.nome}`, 105, 15, { align: 'center' });
       
-      // Client info
       doc.setFontSize(14);
       doc.setTextColor(0, 0, 0);
       
@@ -183,8 +183,8 @@ const EditarAtendimento = () => {
         yPos += 8;
       }
       
-      if (signo) {
-        doc.text(`Signo: ${signo}`, 14, yPos);
+      if (formData.signo) {
+        doc.text(`Signo: ${formData.signo}`, 14, yPos);
         yPos += 8;
       }
       
@@ -200,53 +200,19 @@ const EditarAtendimento = () => {
       doc.text(`Status de Pagamento: ${formData.statusPagamento || 'Não especificado'}`, 14, yPos);
       yPos += 15;
       
-      // Detalhes do atendimento
-      doc.setFontSize(14);
-      doc.setTextColor(14, 165, 233);
-      doc.text('Detalhes do Atendimento', 14, yPos);
-      yPos += 10;
-      
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      
-      if (formData.destino) {
-        const destinoLines = doc.splitTextToSize(`Destino: ${formData.destino}`, 180);
-        doc.text(destinoLines, 14, yPos);
-        yPos += destinoLines.length * 5 + 5;
-      }
-      
-      if (formData.ano) {
-        const anoLines = doc.splitTextToSize(`Ano: ${formData.ano}`, 180);
-        doc.text(anoLines, 14, yPos);
-        yPos += anoLines.length * 5 + 5;
-      }
-      
       if (formData.detalhes) {
-        const detalhesLines = doc.splitTextToSize(`Detalhes da Sessão: ${formData.detalhes}`, 180);
-        doc.text(detalhesLines, 14, yPos);
-        yPos += detalhesLines.length * 5 + 5;
-      }
-      
-      if (formData.tratamento) {
-        const tratamentoLines = doc.splitTextToSize(`Tratamento: ${formData.tratamento}`, 180);
-        doc.text(tratamentoLines, 14, yPos);
-        yPos += tratamentoLines.length * 5 + 5;
-      }
-      
-      if (formData.indicacao) {
-        const indicacaoLines = doc.splitTextToSize(`Indicação: ${formData.indicacao}`, 180);
-        doc.text(indicacaoLines, 14, yPos);
-        yPos += indicacaoLines.length * 5 + 5;
-      }
-      
-      if (atencao) {
-        doc.setTextColor(220, 38, 38);
-        doc.text(`ATENÇÃO: ${formData.atencaoNota || 'Este cliente requer atenção especial'}`, 14, yPos);
+        doc.setFontSize(14);
+        doc.setTextColor(14, 165, 233);
+        doc.text('Detalhes do Atendimento', 14, yPos);
+        yPos += 10;
+        
+        doc.setFontSize(12);
         doc.setTextColor(0, 0, 0);
-        yPos += 8;
+        const detalhesLines = doc.splitTextToSize(formData.detalhes, 180);
+        doc.text(detalhesLines, 14, yPos);
+        yPos += detalhesLines.length * 5 + 10;
       }
       
-      // Footer
       doc.setFontSize(10);
       doc.setTextColor(150);
       doc.text(
@@ -256,7 +222,6 @@ const EditarAtendimento = () => {
         { align: 'center' }
       );
       
-      // Save PDF
       doc.save(`Relatorio_${formData.nome.replace(/ /g, '_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
       
       toast.success("Relatório gerado com sucesso!");
@@ -268,6 +233,8 @@ const EditarAtendimento = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-4">
+      <BirthdayChecker dataNascimento={formData.dataNascimento} nome={formData.nome} />
+      
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center">
@@ -303,7 +270,7 @@ const EditarAtendimento = () => {
                   id="nome" 
                   placeholder="Nome completo" 
                   value={formData.nome}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('nome', e.target.value)}
                 />
               </div>
 
@@ -312,21 +279,21 @@ const EditarAtendimento = () => {
                 <Input 
                   id="dataNascimento" 
                   type="date" 
-                  value={dataNascimento}
-                  onChange={handleDataNascimentoChange}
+                  value={formData.dataNascimento}
+                  onChange={(e) => handleDataNascimentoChange(e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="signo">Signo</Label>
-                <Input id="signo" value={signo} readOnly className="bg-gray-50" />
+                <Input id="signo" value={formData.signo} readOnly className="bg-gray-50" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="tipoServico">Tipo de Serviço</Label>
                 <Select 
                   value={formData.tipoServico} 
-                  onValueChange={(value) => handleSelectChange("tipoServico", value)}
+                  onValueChange={(value) => handleInputChange('tipoServico', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
@@ -345,7 +312,7 @@ const EditarAtendimento = () => {
                   id="dataAtendimento" 
                   type="date" 
                   value={formData.dataAtendimento}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('dataAtendimento', e.target.value)}
                 />
               </div>
 
@@ -356,7 +323,7 @@ const EditarAtendimento = () => {
                   type="number" 
                   placeholder="0.00" 
                   value={formData.valor}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('valor', e.target.value)}
                 />
               </div>
 
@@ -364,7 +331,7 @@ const EditarAtendimento = () => {
                 <Label htmlFor="statusPagamento">Status de Pagamento</Label>
                 <Select 
                   value={formData.statusPagamento} 
-                  onValueChange={(value) => handleSelectChange("statusPagamento", value)}
+                  onValueChange={(value) => handleInputChange('statusPagamento', value)}
                 >
                   <SelectTrigger className={formData.statusPagamento ? `border-2 ${getStatusColor(formData.statusPagamento)}` : ""}>
                     <SelectValue placeholder="Selecione o status" />
@@ -375,16 +342,6 @@ const EditarAtendimento = () => {
                     <SelectItem value="parcelado" className="bg-red-100 text-red-800 hover:bg-red-200">Parcelado</SelectItem>
                   </SelectContent>
                 </Select>
-                
-                {formData.statusPagamento && (
-                  <div className={`mt-2 px-3 py-1 rounded-md text-sm flex items-center ${getStatusColor(formData.statusPagamento)}`}>
-                    <span className={`h-3 w-3 rounded-full mr-2 ${
-                      formData.statusPagamento === 'pago' ? 'bg-white' : 
-                      formData.statusPagamento === 'pendente' ? 'bg-white' : 'bg-white'
-                    }`}></span>
-                    <span className="capitalize">{formData.statusPagamento}</span>
-                  </div>
-                )}
               </div>
 
               <div className="space-y-2">
@@ -393,7 +350,7 @@ const EditarAtendimento = () => {
                   id="destino" 
                   placeholder="Destino do cliente" 
                   value={formData.destino}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('destino', e.target.value)}
                 />
               </div>
 
@@ -403,7 +360,7 @@ const EditarAtendimento = () => {
                   id="ano" 
                   placeholder="Ano específico" 
                   value={formData.ano}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('ano', e.target.value)}
                 />
               </div>
 
@@ -424,7 +381,7 @@ const EditarAtendimento = () => {
                   placeholder="Pontos de atenção" 
                   className={atencao ? "border-red-500 bg-red-50" : ""}
                   value={formData.atencaoNota}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('atencaoNota', e.target.value)}
                 />
               </div>
             </div>
@@ -436,7 +393,7 @@ const EditarAtendimento = () => {
                 placeholder="Revelações, conselhos e orientações..." 
                 className="min-h-[120px]"
                 value={formData.detalhes}
-                onChange={handleInputChange}
+                onChange={(e) => handleInputChange('detalhes', e.target.value)}
               />
             </div>
 
@@ -448,7 +405,7 @@ const EditarAtendimento = () => {
                   placeholder="Observações sobre o tratamento..." 
                   className="min-h-[100px]"
                   value={formData.tratamento}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('tratamento', e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -458,7 +415,7 @@ const EditarAtendimento = () => {
                   placeholder="Informações adicionais e indicações..." 
                   className="min-h-[100px]"
                   value={formData.indicacao}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('indicacao', e.target.value)}
                 />
               </div>
             </div>
