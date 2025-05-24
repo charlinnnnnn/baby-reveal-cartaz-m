@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { User } from 'lucide-react';
@@ -30,10 +29,9 @@ const ClientReportButtons: React.FC<ClientReportButtonsProps> = ({
       const doc = new jsPDF();
       
       if (variant === 'tarot') {
-        // Sempre gera o relatório detalhado por cliente (Individual + Geral)
         generateDetailedClientReport(doc, clientConsultations, clientName);
       } else {
-        generateGeneralReport(doc, clientConsultations, clientName);
+        generateConsolidatedClientReport(doc, clientConsultations, clientName);
       }
       
       const filePrefix = variant === 'tarot' ? 'Relatorio_Detalhado_Cliente' : 'Relatorio_Detalhado';
@@ -44,6 +42,165 @@ const ClientReportButtons: React.FC<ClientReportButtonsProps> = ({
       console.error("Erro ao gerar PDF:", error);
       toast.error("Erro ao gerar relatório");
     }
+  };
+
+  const generateConsolidatedClientReport = (doc, clientConsultations, clientName) => {
+    // Header principal
+    doc.setFontSize(18);
+    doc.setTextColor(14, 165, 233);
+    doc.text(`🔹 Relatório Detalhado: ${clientName}`, 105, 15, { align: 'center' });
+    
+    let yPos = 35;
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    
+    // Informações básicas do cliente (usando dados do primeiro atendimento)
+    const firstConsultation = clientConsultations[0];
+    
+    doc.setFont(undefined, 'bold');
+    doc.text(`Nome do Cliente: ${clientName}`, 14, yPos);
+    yPos += 8;
+    
+    if (firstConsultation?.dataNascimento) {
+      doc.text(`Data de Nascimento: ${new Date(firstConsultation.dataNascimento).toLocaleDateString('pt-BR')}`, 14, yPos);
+      yPos += 8;
+    }
+    
+    if (firstConsultation?.signo) {
+      doc.text(`Signo: ${firstConsultation.signo}`, 14, yPos);
+      yPos += 8;
+    }
+    
+    doc.text(`Total de Atendimentos: ${clientConsultations.length}`, 14, yPos);
+    yPos += 8;
+    
+    const totalValue = clientConsultations.reduce((acc, curr) => acc + parseFloat(curr.valor || "0"), 0);
+    doc.text(`Valor Total: R$ ${totalValue.toFixed(2)}`, 14, yPos);
+    yPos += 15;
+    
+    doc.setFont(undefined, 'normal');
+    
+    // Para cada atendimento, seguir o formato do relatório individual
+    clientConsultations.forEach((atendimento, index) => {
+      // Verificar se precisa de nova página
+      if (yPos > 200) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      // Título do atendimento
+      doc.setFontSize(14);
+      doc.setTextColor(14, 165, 233);
+      doc.setFont(undefined, 'bold');
+      const dataFormatada = atendimento.dataAtendimento ? 
+        new Date(atendimento.dataAtendimento).toLocaleDateString('pt-BR') : 'N/A';
+      doc.text(`Atendimento ${index + 1} – ${dataFormatada}`, 14, yPos);
+      yPos += 12;
+      
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      
+      // Detalhes do atendimento seguindo o formato individual
+      if (atendimento.tipoServico) {
+        doc.setFont(undefined, 'bold');
+        doc.text('Tipo de Serviço:', 14, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.text(atendimento.tipoServico.replace('-', ' ').replace('tarot', 'Tarot').replace('terapia', 'Terapia').replace('mesa radionica', 'Mesa Radiônica'), 80, yPos);
+        yPos += 6;
+      }
+      
+      if (atendimento.valor) {
+        doc.setFont(undefined, 'bold');
+        doc.text('Valor Cobrado:', 14, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.text(`R$ ${parseFloat(atendimento.valor).toFixed(2)}`, 80, yPos);
+        yPos += 6;
+      }
+      
+      if (atendimento.statusPagamento) {
+        doc.setFont(undefined, 'bold');
+        doc.text('Status de Pagamento:', 14, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.text(atendimento.statusPagamento.charAt(0).toUpperCase() + atendimento.statusPagamento.slice(1), 80, yPos);
+        yPos += 6;
+      }
+      
+      if (atendimento.destino) {
+        doc.setFont(undefined, 'bold');
+        doc.text('Destino:', 14, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.text(atendimento.destino, 80, yPos);
+        yPos += 6;
+      }
+      
+      if (atendimento.ano) {
+        doc.setFont(undefined, 'bold');
+        doc.text('Ano:', 14, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.text(atendimento.ano, 80, yPos);
+        yPos += 6;
+      }
+      
+      // Pontos de Atenção
+      if (atendimento.atencaoFlag) {
+        doc.setFont(undefined, 'bold');
+        doc.text('Pontos de Atenção:', 14, yPos);
+        yPos += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(220, 38, 38);
+        const atencaoText = atendimento.atencaoNota || 'Este cliente requer atenção especial';
+        const atencaoLines = doc.splitTextToSize(atencaoText, 180);
+        doc.text(atencaoLines, 14, yPos);
+        yPos += atencaoLines.length * 5 + 5;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      // Detalhes da Sessão
+      if (atendimento.detalhes) {
+        doc.setFont(undefined, 'bold');
+        doc.text('Detalhes da Sessão:', 14, yPos);
+        yPos += 6;
+        doc.setFont(undefined, 'normal');
+        const detalhesLines = doc.splitTextToSize(atendimento.detalhes, 180);
+        doc.text(detalhesLines, 14, yPos);
+        yPos += detalhesLines.length * 5 + 5;
+      }
+      
+      // Tratamento
+      if (atendimento.tratamento) {
+        doc.setFont(undefined, 'bold');
+        doc.text('Tratamento:', 14, yPos);
+        yPos += 6;
+        doc.setFont(undefined, 'normal');
+        const tratamentoLines = doc.splitTextToSize(atendimento.tratamento, 180);
+        doc.text(tratamentoLines, 14, yPos);
+        yPos += tratamentoLines.length * 5 + 5;
+      }
+      
+      // Indicação
+      if (atendimento.indicacao) {
+        doc.setFont(undefined, 'bold');
+        doc.text('Indicação:', 14, yPos);
+        yPos += 6;
+        doc.setFont(undefined, 'normal');
+        const indicacaoLines = doc.splitTextToSize(atendimento.indicacao, 180);
+        doc.text(indicacaoLines, 14, yPos);
+        yPos += indicacaoLines.length * 5 + 5;
+      }
+      
+      // Separador entre atendimentos (exceto no último)
+      if (index < clientConsultations.length - 1) {
+        yPos += 5;
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(200, 200, 200);
+        doc.line(14, yPos, 196, yPos);
+        yPos += 10;
+      }
+    });
+    
+    addFooter(doc);
   };
 
   const generateDetailedClientReport = (doc, consultations, clientName) => {
