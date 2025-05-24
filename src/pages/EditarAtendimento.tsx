@@ -13,13 +13,30 @@ import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
 import useUserDataService from "@/services/userDataService";
 
+interface AtendimentoFormData {
+  nome: string;
+  dataAtendimento: string;
+  tipoServico: string;
+  valor: string;
+  statusPagamento: string;
+  dataNascimento: string;
+  signo: string;
+  destino: string;
+  ano: string;
+  detalhes: string;
+  tratamento: string;
+  indicacao: string;
+  atencaoFlag: boolean;
+  atencaoNota: string;
+}
+
 const EditarAtendimento = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { toast } = useToast();
   const { getAtendimentos, saveAtendimentos } = useUserDataService();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AtendimentoFormData>({
     nome: '',
     dataAtendimento: '',
     tipoServico: '',
@@ -36,34 +53,55 @@ const EditarAtendimento = () => {
     atencaoNota: ''
   });
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    // Carregar dados do atendimento a ser editado
-    const atendimentos = getAtendimentos();
-    const atendimento = atendimentos.find(a => a.id === id);
-    
-    if (atendimento) {
-      setFormData({
-        nome: atendimento.nome || '',
-        dataAtendimento: atendimento.dataAtendimento || '',
-        tipoServico: atendimento.tipoServico || '',
-        valor: atendimento.valor || '',
-        statusPagamento: atendimento.statusPagamento || 'pendente',
-        dataNascimento: atendimento.dataNascimento || '',
-        signo: atendimento.signo || '',
-        destino: atendimento.destino || '',
-        ano: atendimento.ano || '',
-        detalhes: atendimento.detalhes || '',
-        tratamento: atendimento.tratamento || '',
-        indicacao: atendimento.indicacao || '',
-        atencaoFlag: atendimento.atencaoFlag || false,
-        atencaoNota: atendimento.atencaoNota || ''
-      });
+    const carregarAtendimento = () => {
+      try {
+        const atendimentos = getAtendimentos();
+        const atendimento = atendimentos.find((a: any) => a.id === id);
+        
+        if (atendimento) {
+          setFormData({
+            nome: atendimento.nome || '',
+            dataAtendimento: atendimento.dataAtendimento || '',
+            tipoServico: atendimento.tipoServico || '',
+            valor: atendimento.valor || '',
+            statusPagamento: atendimento.statusPagamento || 'pendente',
+            dataNascimento: atendimento.dataNascimento || '',
+            signo: atendimento.signo || '',
+            destino: atendimento.destino || '',
+            ano: atendimento.ano || '',
+            detalhes: atendimento.detalhes || '',
+            tratamento: atendimento.tratamento || '',
+            indicacao: atendimento.indicacao || '',
+            atencaoFlag: atendimento.atencaoFlag || false,
+            atencaoNota: atendimento.atencaoNota || ''
+          });
+        } else {
+          toast({
+            title: "Atendimento não encontrado",
+            description: "O atendimento que você está tentando editar não foi encontrado.",
+            variant: "destructive",
+          });
+          navigate('/');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar atendimento:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar o atendimento.",
+          variant: "destructive",
+        });
+        navigate('/');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      carregarAtendimento();
     } else {
-      toast({
-        title: "Atendimento não encontrado",
-        description: "O atendimento que você está tentando editar não foi encontrado.",
-        variant: "destructive",
-      });
       navigate('/');
     }
   }, [id, getAtendimentos, navigate, toast]);
@@ -89,7 +127,7 @@ const EditarAtendimento = () => {
     else return "Peixes";
   };
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: keyof AtendimentoFormData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -108,7 +146,7 @@ const EditarAtendimento = () => {
 
   const handleSalvar = () => {
     // Validação básica
-    if (!formData.nome || !formData.dataAtendimento || !formData.tipoServico) {
+    if (!formData.nome.trim() || !formData.dataAtendimento || !formData.tipoServico) {
       toast({
         title: "Campos obrigatórios",
         description: "Preencha pelo menos o nome, data e tipo de serviço.",
@@ -117,27 +155,47 @@ const EditarAtendimento = () => {
       return;
     }
 
-    // Buscar atendimentos atuais
-    const atendimentos = getAtendimentos();
-    
-    // Atualizar o atendimento específico
-    const atendimentosAtualizados = atendimentos.map(atendimento => 
-      atendimento.id === id 
-        ? { ...atendimento, ...formData }
-        : atendimento
-    );
+    try {
+      // Buscar atendimentos atuais
+      const atendimentos = getAtendimentos();
+      
+      // Atualizar o atendimento específico
+      const atendimentosAtualizados = atendimentos.map((atendimento: any) => 
+        atendimento.id === id 
+          ? { ...atendimento, ...formData }
+          : atendimento
+      );
 
-    // Salvar atendimentos atualizados
-    saveAtendimentos(atendimentosAtualizados);
+      // Salvar atendimentos atualizados
+      saveAtendimentos(atendimentosAtualizados);
 
-    toast({
-      title: "Atendimento atualizado",
-      description: "O atendimento foi atualizado com sucesso.",
-      variant: "default",
-    });
+      toast({
+        title: "Atendimento atualizado",
+        description: "O atendimento foi atualizado com sucesso.",
+        variant: "default",
+      });
 
-    navigate('/');
+      navigate('/');
+    } catch (error) {
+      console.error('Erro ao salvar atendimento:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar o atendimento.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <Logo height={60} width={60} />
+          <p className="mt-4 text-gray-600">Carregando atendimento...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
