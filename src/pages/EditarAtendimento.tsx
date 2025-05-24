@@ -106,17 +106,19 @@ const EditarAtendimento = () => {
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
-    setFormData({
-      ...formData,
+    console.log(`Alterando campo ${id} para:`, value);
+    setFormData(prev => ({
+      ...prev,
       [id]: value,
-    });
+    }));
   };
 
   const handleSelectChange = (field, value) => {
-    setFormData({
-      ...formData,
+    console.log(`Alterando select ${field} para:`, value);
+    setFormData(prev => ({
+      ...prev,
       [field]: value,
-    });
+    }));
   };
 
   const checkIfBirthday = (birthDate) => {
@@ -138,10 +140,7 @@ const EditarAtendimento = () => {
 
   const handleDataNascimentoChange = (e) => {
     const value = e.target.value;
-    setFormData({
-      ...formData,
-      dataNascimento: value,
-    });
+    console.log('Alterando data de nascimento para:', value);
     
     // Check if it's birthday
     if (value) {
@@ -168,21 +167,23 @@ const EditarAtendimento = () => {
       else if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) signoCalculado = "Aquário";
       else signoCalculado = "Peixes";
       
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         dataNascimento: value,
         signo: signoCalculado,
-      });
+      }));
     } else {
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         dataNascimento: value,
         signo: "",
-      });
+      }));
     }
   };
 
   const handleSalvarAtendimento = () => {
+    console.log('Tentando salvar atendimento. Dados atuais:', formData);
+    
     // Validações básicas
     if (!formData.nome.trim()) {
       toast.error("Nome é obrigatório");
@@ -196,6 +197,7 @@ const EditarAtendimento = () => {
 
     try {
       const existingAtendimentos = getAtendimentos();
+      console.log('Atendimentos existentes antes da atualização:', existingAtendimentos);
       
       const atendimentoAtualizado = {
         id: id,
@@ -203,9 +205,13 @@ const EditarAtendimento = () => {
         dataUltimaEdicao: new Date().toISOString(),
       };
       
+      console.log('Atendimento que será salvo:', atendimentoAtualizado);
+      
       const atendimentosAtualizados = existingAtendimentos.map(atendimento => 
         atendimento.id === id ? atendimentoAtualizado : atendimento
       );
+      
+      console.log('Lista de atendimentos após atualização:', atendimentosAtualizados);
       
       saveAtendimentos(atendimentosAtualizados);
       
@@ -381,7 +387,10 @@ const EditarAtendimento = () => {
                   </Label>
                   <Switch 
                     checked={formData.atencaoFlag} 
-                    onCheckedChange={(checked) => setFormData({...formData, atencaoFlag: checked})} 
+                    onCheckedChange={(checked) => {
+                      console.log('Alterando flag de atenção para:', checked);
+                      setFormData(prev => ({...prev, atencaoFlag: checked}));
+                    }} 
                     className="data-[state=checked]:bg-red-500"
                   />
                 </div>
@@ -448,6 +457,19 @@ const EditarAtendimento = () => {
       </div>
     </div>
   );
+};
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case "pago":
+      return "bg-green-500 text-white border-green-600";
+    case "pendente":
+      return "bg-yellow-500 text-white border-yellow-600";
+    case "parcelado":
+      return "bg-red-500 text-white border-red-600";
+    default:
+      return "bg-gray-200 text-gray-800 border-gray-300";
+  }
 };
 
 export default EditarAtendimento;
