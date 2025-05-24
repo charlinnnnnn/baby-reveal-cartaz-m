@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -20,15 +21,7 @@ import useUserDataService from "@/services/userDataService";
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
 import { Separator } from '@/components/ui/separator';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-
-// Add the type declaration for jsPDF with autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
+import { jsPDF } from 'jspdf';
 
 const RelatorioIndividual = () => {
   const navigate = useNavigate();
@@ -58,114 +51,113 @@ const RelatorioIndividual = () => {
     try {
       const doc = new jsPDF();
       
-      // Adicionar cabeçalho
+      // Usar o mesmo formato do relatório geral do cliente
       doc.setFontSize(18);
-      doc.setTextColor(14, 165, 233); // Cor azul do Libertá (#0EA5E9)
-      doc.text('Relatório de Atendimento Individual', 105, 15, { align: 'center' });
-      
-      // Informações do cliente
-      doc.setFontSize(14);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Cliente: ${atendimento.nome}`, 14, 30);
-      
-      if (atendimento.dataNascimento) {
-        const dataNasc = new Date(atendimento.dataNascimento).toLocaleDateString('pt-BR');
-        doc.text(`Data de Nascimento: ${dataNasc}`, 14, 38);
-      }
-      
-      if (atendimento.signo) {
-        doc.text(`Signo: ${atendimento.signo}`, 14, 46);
-      }
-      
-      if (atendimento.email) {
-        doc.text(`Email: ${atendimento.email}`, 14, 54);
-      }
-      
-      // Linha separadora
-      doc.line(14, 60, 196, 60);
-      
-      // Detalhes do atendimento
-      doc.setFontSize(14);
       doc.setTextColor(14, 165, 233);
-      doc.text('Detalhes do Atendimento', 105, 70, { align: 'center' });
+      doc.text('🔹 Relatório Individual do Cliente', 105, 15, { align: 'center' });
+      
+      let yPos = 30;
       
       doc.setFontSize(12);
       doc.setTextColor(0, 0, 0);
       
-      const formattedDate = atendimento.dataAtendimento 
-        ? new Date(atendimento.dataAtendimento).toLocaleDateString('pt-BR')
-        : '-';
+      doc.setFont(undefined, 'bold');
+      doc.text(`Nome do Cliente: ${atendimento.nome}`, 14, yPos);
+      yPos += 8;
       
-      doc.text(`Data do Atendimento: ${formattedDate}`, 14, 80);
-      doc.text(`Tipo de Serviço: ${atendimento.tipoServico.replace('-', ' ')}`, 14, 88);
-      doc.text(`Valor Cobrado: R$ ${parseFloat(atendimento.valor || 0).toFixed(2)}`, 14, 96);
-      doc.text(`Status de Pagamento: ${atendimento.statusPagamento || 'Pendente'}`, 14, 104);
+      if (atendimento.dataNascimento) {
+        doc.text(`Data de Nascimento: ${new Date(atendimento.dataNascimento).toLocaleDateString('pt-BR')}`, 14, yPos);
+        yPos += 8;
+      }
+      
+      if (atendimento.signo) {
+        doc.text(`Signo: ${atendimento.signo}`, 14, yPos);
+        yPos += 8;
+      }
+      
+      if (atendimento.email) {
+        doc.text(`Email: ${atendimento.email}`, 14, yPos);
+        yPos += 8;
+      }
+      
+      doc.text(`Total de 1 Atendimento`, 14, yPos);
+      yPos += 8;
+      
+      doc.text(`Valor Total Gasto: R$ ${parseFloat(atendimento.valor || 0).toFixed(2)}`, 14, yPos);
+      yPos += 8;
+      
+      doc.text(`Média por Atendimento: R$ ${parseFloat(atendimento.valor || 0).toFixed(2)}`, 14, yPos);
+      yPos += 10;
+      
+      doc.setFont(undefined, 'normal');
+      
+      // Detalhes do atendimento seguindo o padrão
+      const appointmentNumber = `1️⃣`;
+      const dataFormatada = atendimento.dataAtendimento ? 
+        new Date(atendimento.dataAtendimento).toLocaleDateString('pt-BR') : 'N/A';
+      const servicoFormatado = atendimento.tipoServico ? 
+        atendimento.tipoServico.replace('-', ' ').replace('tarot', 'Tarot').replace('terapia', 'Terapia').replace('mesa radionica', 'Mesa Radiônica') :
+        'N/A';
+      const statusFormatado = atendimento.statusPagamento || 'Não especificado';
+      
+      doc.setFont(undefined, 'bold');
+      doc.text(`${appointmentNumber} Data: ${dataFormatada} — 💼 Serviço: ${servicoFormatado} — 💳 Status: ${statusFormatado}`, 14, yPos);
+      yPos += 6;
+      
+      doc.setFont(undefined, 'normal');
+      
+      // Details seguindo o mesmo padrão
+      if (atendimento.destino) {
+        doc.text(`Destino: ${atendimento.destino}`, 14, yPos);
+        yPos += 5;
+      }
+      
+      if (atendimento.ano) {
+        doc.text(`Ano: ${atendimento.ano}`, 14, yPos);
+        yPos += 5;
+      }
+      
+      if (atendimento.detalhes) {
+        const detalhesLines = doc.splitTextToSize(`Detalhes da Sessão: ${atendimento.detalhes}`, 180);
+        doc.text(detalhesLines, 14, yPos);
+        yPos += detalhesLines.length * 5;
+      }
+      
+      if (atendimento.tratamento) {
+        const tratamentoLines = doc.splitTextToSize(`Tratamento: ${atendimento.tratamento}`, 180);
+        doc.text(tratamentoLines, 14, yPos);
+        yPos += tratamentoLines.length * 5;
+      }
+      
+      if (atendimento.indicacao) {
+        const indicacaoLines = doc.splitTextToSize(`Indicação: ${atendimento.indicacao}`, 180);
+        doc.text(indicacaoLines, 14, yPos);
+        yPos += indicacaoLines.length * 5;
+      }
       
       if (atendimento.atencaoFlag) {
-        doc.setTextColor(220, 38, 38); // Vermelho para atenção
-        doc.text(`ATENÇÃO ESPECIAL: ${atendimento.atencaoNota || 'Este cliente requer atenção especial'}`, 14, 112);
-        doc.setTextColor(0, 0, 0); // Restaurar cor preta
-      }
-      
-      // Detalhes
-      if (atendimento.detalhes) {
-        doc.setFontSize(14);
-        doc.setTextColor(14, 165, 233);
-        doc.text('Detalhes da Sessão', 14, 130);
-        
-        doc.setFontSize(12);
+        doc.setTextColor(220, 38, 38);
+        doc.text(`ATENÇÃO: ${atendimento.atencaoNota || 'Este cliente requer atenção especial'}`, 14, yPos);
         doc.setTextColor(0, 0, 0);
-        
-        // Quebrar texto de detalhes em linhas
-        const splitDetalhes = doc.splitTextToSize(atendimento.detalhes, 180);
-        doc.text(splitDetalhes, 14, 140);
+        yPos += 8;
       }
       
-      // Tratamento
-      let yPos = 170;
-      if (atendimento.tratamento) {
-        doc.setFontSize(14);
-        doc.setTextColor(14, 165, 233);
-        doc.text('Tratamento Recomendado', 14, yPos);
-        
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 0);
-        
-        // Quebrar texto de tratamento em linhas
-        const splitTratamento = doc.splitTextToSize(atendimento.tratamento, 180);
-        doc.text(splitTratamento, 14, yPos + 10);
-        
-        yPos += splitTratamento.length * 6 + 20;
+      // Footer igual ao padrão
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text(
+          `Libertá - Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} - Página ${i} de ${totalPages}`,
+          105,
+          doc.internal.pageSize.height - 10,
+          { align: 'center' }
+        );
       }
-      
-      // Indicação
-      if (atendimento.indicacao) {
-        // Verificar se precisamos de uma nova página
-        if (yPos > 240) {
-          doc.addPage();
-          yPos = 20;
-        }
-        
-        doc.setFontSize(14);
-        doc.setTextColor(14, 165, 233);
-        doc.text('Indicações', 14, yPos);
-        
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 0);
-        
-        // Quebrar texto de indicação em linhas
-        const splitIndicacao = doc.splitTextToSize(atendimento.indicacao, 180);
-        doc.text(splitIndicacao, 14, yPos + 10);
-      }
-      
-      // Identificação e rodapé
-      doc.setFontSize(10);
-      doc.setTextColor(150);
-      doc.text(`Libertá - Relatório gerado em ${new Date().toLocaleDateString('pt-BR')}`, 
-        105, doc.internal.pageSize.height - 10, { align: 'center' });
       
       // Salvar o PDF
-      doc.save(`Atendimento_${atendimento.nome.replace(/ /g, '_')}_${formattedDate.replace(/\//g, '-')}.pdf`);
+      doc.save(`Relatorio_Individual_${atendimento.nome.replace(/ /g, '_')}_${dataFormatada.replace(/\//g, '-')}.pdf`);
       
       toast.success("Relatório gerado", {
         description: "O relatório desta consulta foi baixado com sucesso.",
@@ -302,7 +294,7 @@ const RelatorioIndividual = () => {
           </CardContent>
         </Card>
         
-        {/* Detalhes do Atendimento */}
+        {/* Detalhes do Atendimento seguindo o mesmo padrão */}
         <Card className="mb-8 border-blue-100 shadow-md">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-100">
             <CardTitle className="text-[#0EA5E9] flex items-center gap-2">
@@ -358,17 +350,42 @@ const RelatorioIndividual = () => {
               </div>
             )}
             
-            <div className="mb-6">
-              <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-[#0EA5E9]" />
-                Observações
-              </h4>
-              <div className="p-4 bg-gray-50 rounded-md border border-gray-100">
-                <p className="text-gray-700">
-                  {atendimento.observacoes || "Nenhuma observação registrada."}
-                </p>
+            {/* Seções seguindo o padrão do relatório geral */}
+            {atendimento.detalhes && (
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-[#0EA5E9]" />
+                  Detalhes da Sessão
+                </h4>
+                <div className="p-4 bg-gray-50 rounded-md border border-gray-100">
+                  <p className="text-gray-700">{atendimento.detalhes}</p>
+                </div>
               </div>
-            </div>
+            )}
+            
+            {atendimento.tratamento && (
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-[#0EA5E9]" />
+                  Tratamento
+                </h4>
+                <div className="p-4 bg-gray-50 rounded-md border border-gray-100">
+                  <p className="text-gray-700">{atendimento.tratamento}</p>
+                </div>
+              </div>
+            )}
+            
+            {atendimento.indicacao && (
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-[#0EA5E9]" />
+                  Indicação
+                </h4>
+                <div className="p-4 bg-gray-50 rounded-md border border-gray-100">
+                  <p className="text-gray-700">{atendimento.indicacao}</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
         
