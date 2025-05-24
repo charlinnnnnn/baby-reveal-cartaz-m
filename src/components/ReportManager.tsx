@@ -3,16 +3,9 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, User } from 'lucide-react';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import useUserDataService from '@/services/userDataService';
-
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    getNumberOfPages: () => number;
-  }
-}
 
 interface ReportManagerProps {
   variant?: 'home' | 'tarot';
@@ -61,7 +54,7 @@ const ReportManager: React.FC<ReportManagerProps> = ({ variant = 'home' }) => {
         a.statusPagamento || 'N/A'
       ]);
       
-      doc.autoTable({
+      autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: yPos,
@@ -137,7 +130,7 @@ const ReportManager: React.FC<ReportManagerProps> = ({ variant = 'home' }) => {
         a.statusPagamento || 'N/A'
       ]);
       
-      doc.autoTable({
+      autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: yPos,

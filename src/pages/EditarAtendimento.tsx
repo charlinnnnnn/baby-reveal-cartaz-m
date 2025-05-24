@@ -23,16 +23,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, AlertTriangle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import useUserDataService from "@/services/userDataService";
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import BirthdayChecker from "@/components/BirthdayChecker";
-
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    getNumberOfPages: () => number;
-  }
-}
 
 const EditarAtendimento = () => {
   const navigate = useNavigate();

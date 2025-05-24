@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,8 +22,8 @@ import UserMenu from "@/components/UserMenu";
 import { format } from 'date-fns';
 import useUserDataService from "@/services/userDataService";
 import { useToast } from "@/hooks/use-toast";
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Add the type declaration for jsPDF with autoTable
 declare module 'jspdf' {
@@ -104,7 +103,7 @@ const RelatorioGeral = () => {
         a.detalhes ? (a.detalhes.length > 30 ? a.detalhes.substring(0, 30) + '...' : a.detalhes) : '-'
       ]);
       
-      doc.autoTable({
+      autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: yPos,
@@ -254,7 +253,7 @@ const RelatorioGeral = () => {
       });
       
       // Adicionar a tabela ao documento
-      doc.autoTable({
+      autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: yPos,
