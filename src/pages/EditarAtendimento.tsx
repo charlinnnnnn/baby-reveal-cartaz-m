@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -32,6 +31,7 @@ const EditarAtendimento = () => {
   const { id } = useParams();
   const { getAtendimentos, saveAtendimentos } = useUserDataService();
   const [atencao, setAtencao] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     id: "",
     nome: "",
@@ -52,11 +52,15 @@ const EditarAtendimento = () => {
   });
 
   useEffect(() => {
+    console.log("EditarAtendimento: Loading atendimento with ID:", id);
     const atendimentos = getAtendimentos();
+    console.log("EditarAtendimento: Available atendimentos:", atendimentos);
+    
     const atendimento = atendimentos.find(item => item.id === id);
+    console.log("EditarAtendimento: Found atendimento:", atendimento);
     
     if (atendimento) {
-      setFormData({
+      const newFormData = {
         id: atendimento.id || "",
         nome: atendimento.nome || "",
         dataNascimento: atendimento.dataNascimento || "",
@@ -73,22 +77,33 @@ const EditarAtendimento = () => {
         indicacao: atendimento.indicacao || "",
         atencaoFlag: atendimento.atencaoFlag || false,
         data: atendimento.data || ""
-      });
+      };
+      
+      console.log("EditarAtendimento: Setting form data:", newFormData);
+      setFormData(newFormData);
       setAtencao(atendimento.atencaoFlag || false);
     } else {
       toast.error("Atendimento não encontrado");
       navigate("/");
     }
+    
+    setIsLoading(false);
   }, [id, navigate, getAtendimentos]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    console.log("EditarAtendimento: Updating field", field, "with value", value);
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [field]: value
+      };
+      console.log("EditarAtendimento: Updated form data:", updated);
+      return updated;
+    });
   };
 
   const handleDataNascimentoChange = (value: string) => {
+    console.log("EditarAtendimento: Updating birth date with value", value);
     setFormData(prev => ({
       ...prev,
       dataNascimento: value
@@ -121,6 +136,8 @@ const EditarAtendimento = () => {
   };
 
   const handleSaveAtendimento = () => {
+    console.log("EditarAtendimento: Saving atendimento with data:", formData);
+    
     if (!formData.nome.trim()) {
       toast.error("Nome do cliente é obrigatório");
       return;
@@ -129,11 +146,15 @@ const EditarAtendimento = () => {
     const atendimentos = getAtendimentos();
     const index = atendimentos.findIndex(item => item.id === id);
     
+    console.log("EditarAtendimento: Found index:", index);
+    
     if (index !== -1) {
       const updatedAtendimento = {
         ...formData,
         atencaoFlag: atencao,
       };
+      
+      console.log("EditarAtendimento: Updated atendimento:", updatedAtendimento);
       
       atendimentos[index] = updatedAtendimento;
       saveAtendimentos(atendimentos);
@@ -223,6 +244,14 @@ const EditarAtendimento = () => {
       toast.error("Erro ao gerar relatório");
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-6 px-4 flex items-center justify-center">
+        <div>Carregando...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-4">
