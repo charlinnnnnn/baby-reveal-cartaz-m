@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Card,
@@ -20,6 +19,8 @@ import Logo from "@/components/Logo";
 const EditarAnaliseFrequencial = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const firstFieldRef = useRef<HTMLInputElement>(null);
+  
   const [nomeCliente, setNomeCliente] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
   const [signo, setSigno] = useState("");
@@ -32,6 +33,17 @@ const EditarAnaliseFrequencial = () => {
     { id: 1, texto: "", dias: 7 }
   ]);
   const [analiseCarregada, setAnaliseCarregada] = useState(false);
+
+  // Auto focus on first field
+  useEffect(() => {
+    if (analiseCarregada && firstFieldRef.current) {
+      const timer = setTimeout(() => {
+        firstFieldRef.current?.focus();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [analiseCarregada]);
 
   // Verificar notificações ao carregar a página
   useEffect(() => {
@@ -267,6 +279,7 @@ const EditarAnaliseFrequencial = () => {
               <div className="space-y-2">
                 <Label htmlFor="nome">Nome do Cliente</Label>
                 <Input 
+                  ref={firstFieldRef}
                   id="nome" 
                   placeholder="Nome completo" 
                   value={nomeCliente}
@@ -289,8 +302,8 @@ const EditarAnaliseFrequencial = () => {
                 <Input 
                   id="signo" 
                   value={signo} 
-                  readOnly 
-                  className="bg-gray-50" 
+                  onChange={(e) => setSigno(e.target.value)}
+                  placeholder="Signo do zodíaco"
                 />
               </div>
 
@@ -309,6 +322,7 @@ const EditarAnaliseFrequencial = () => {
                 <Input 
                   id="preco" 
                   type="number" 
+                  step="0.01"
                   placeholder="0.00" 
                   value={preco}
                   onChange={(e) => setPreco(e.target.value)}

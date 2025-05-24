@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -68,6 +69,8 @@ const FrequencyAnalysisForm: React.FC<FrequencyAnalysisFormProps> = ({
   onCancel,
   editingAnalysis,
 }) => {
+  const firstFieldRef = useRef<HTMLInputElement>(null);
+  
   // Ensure we have a properly typed array of counters with all required properties
   const initialCounters: Counter[] = (editingAnalysis?.counters || []).map((counter: any) => ({
     id: counter.id || uuidv4(),
@@ -92,6 +95,17 @@ const FrequencyAnalysisForm: React.FC<FrequencyAnalysisFormProps> = ({
       counters: initialCounters,
     },
   });
+
+  // Auto focus on first field when form opens
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (firstFieldRef.current) {
+        firstFieldRef.current.focus();
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleAddCounter = () => {
     const newCounter: Counter = {
@@ -156,7 +170,11 @@ const FrequencyAnalysisForm: React.FC<FrequencyAnalysisFormProps> = ({
               <FormItem>
                 <FormLabel>Nome do Cliente</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nome completo" {...field} />
+                  <Input 
+                    ref={firstFieldRef}
+                    placeholder="Nome completo" 
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -198,6 +216,7 @@ const FrequencyAnalysisForm: React.FC<FrequencyAnalysisFormProps> = ({
                         date > new Date() || date < new Date("1900-01-01")
                       }
                       initialFocus
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -238,6 +257,7 @@ const FrequencyAnalysisForm: React.FC<FrequencyAnalysisFormProps> = ({
                       selected={field.value}
                       onSelect={field.onChange}
                       initialFocus
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -424,6 +444,7 @@ const FrequencyAnalysisForm: React.FC<FrequencyAnalysisFormProps> = ({
                           date && handleUpdateCounter(counter.id, counter.name, date)
                         }
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
