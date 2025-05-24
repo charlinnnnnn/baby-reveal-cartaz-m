@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -365,14 +364,6 @@ const Index = () => {
                           ) : null}
                         </td>
                         <td className="py-3 px-4 text-center flex justify-center gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="text-[#0EA5E9] hover:bg-blue-100 hover:text-[#0284C7]"
-                            onClick={() => handleEditAtendimento(atendimento.id)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button 

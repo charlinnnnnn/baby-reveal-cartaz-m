@@ -36,24 +36,6 @@ export const saveNewAtendimento = (atendimento: AtendimentoData, userDataService
   return atendimento;
 };
 
-// Function to update an existing atendimento
-export const updateAtendimento = (id: string, updatedAtendimento: Partial<AtendimentoData>, userDataService: ReturnType<typeof useUserDataService>) => {
-  const { getAtendimentos, saveAtendimentos } = userDataService;
-  
-  // Get current atendimentos
-  const currentAtendimentos = getAtendimentos();
-  
-  // Find and update the specific one
-  const updatedAtendimentos = currentAtendimentos.map(atendimento => 
-    atendimento.id === id ? { ...atendimento, ...updatedAtendimento } : atendimento
-  );
-  
-  // Save all
-  saveAtendimentos(updatedAtendimentos);
-  
-  return updatedAtendimento;
-};
-
 // Function to save a new tarot analysis
 export const saveNewTarotAnalysis = (analysis: any, userDataService: ReturnType<typeof useUserDataService>) => {
   const { getTarotAnalyses, saveTarotAnalyses } = userDataService;

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,7 +7,6 @@ import { useState } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import NovoAtendimento from "./pages/NovoAtendimento";
-import EditarAtendimento from "./pages/EditarAtendimento";
 import AnaliseFrequencial from "./pages/AnaliseFrequencial";
 import ListagemTarot from "./pages/ListagemTarot";
 import EditarAnaliseFrequencial from "./pages/EditarAnaliseFrequencial";
@@ -28,7 +26,6 @@ function AppRoutes() {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/novo-atendimento" element={<NovoAtendimento />} />
-            <Route path="/editar-atendimento/:id" element={<EditarAtendimento />} />
             <Route path="/analise-frequencial" element={<AnaliseFrequencial />} />
             <Route path="/listagem-tarot" element={<ListagemTarot />} />
             <Route path="/editar-analise-frequencial/:id" element={<EditarAnaliseFrequencial />} />
