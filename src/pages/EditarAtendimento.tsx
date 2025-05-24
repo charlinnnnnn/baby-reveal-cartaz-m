@@ -11,9 +11,9 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
-import useUserDataService from "@/services/userDataService";
 
 interface AtendimentoFormData {
+  id: string;
   nome: string;
   dataAtendimento: string;
   tipoServico: string;
@@ -34,9 +34,9 @@ const EditarAtendimento = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { toast } = useToast();
-  const { getAtendimentos, saveAtendimentos } = useUserDataService();
 
   const [formData, setFormData] = useState<AtendimentoFormData>({
+    id: '',
     nome: '',
     dataAtendimento: '',
     tipoServico: '',
@@ -58,11 +58,17 @@ const EditarAtendimento = () => {
   useEffect(() => {
     const carregarAtendimento = () => {
       try {
-        const atendimentos = getAtendimentos();
+        // Buscar diretamente no localStorage
+        const atendimentos = JSON.parse(localStorage.getItem('atendimentos') || '[]');
+        console.log('Atendimentos encontrados:', atendimentos);
+        console.log('ID procurado:', id);
+        
         const atendimento = atendimentos.find((a: any) => a.id === id);
+        console.log('Atendimento encontrado:', atendimento);
         
         if (atendimento) {
           setFormData({
+            id: atendimento.id || '',
             nome: atendimento.nome || '',
             dataAtendimento: atendimento.dataAtendimento || '',
             tipoServico: atendimento.tipoServico || '',
@@ -104,7 +110,7 @@ const EditarAtendimento = () => {
     } else {
       navigate('/');
     }
-  }, [id, getAtendimentos, navigate, toast]);
+  }, [id, navigate, toast]);
 
   const calcularSigno = (dataNascimento: string) => {
     if (!dataNascimento) return '';
@@ -128,23 +134,25 @@ const EditarAtendimento = () => {
   };
 
   const handleInputChange = (field: keyof AtendimentoFormData, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-
-    // Auto-calcular signo quando data de nascimento mudar
-    if (field === 'dataNascimento') {
-      const signo = calcularSigno(value);
-      setFormData(prev => ({
-        ...prev,
-        dataNascimento: value,
-        signo: signo
-      }));
-    }
+    console.log(`Alterando campo ${field} para:`, value);
+    
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Auto-calcular signo quando data de nascimento mudar
+      if (field === 'dataNascimento') {
+        const signo = calcularSigno(value);
+        newData.signo = signo;
+      }
+      
+      console.log('Novo formData:', newData);
+      return newData;
+    });
   };
 
   const handleSalvar = () => {
+    console.log('Tentando salvar:', formData);
+    
     // Validação básica
     if (!formData.nome.trim() || !formData.dataAtendimento || !formData.tipoServico) {
       toast({
@@ -156,18 +164,21 @@ const EditarAtendimento = () => {
     }
 
     try {
-      // Buscar atendimentos atuais
-      const atendimentos = getAtendimentos();
+      // Buscar atendimentos atuais diretamente do localStorage
+      const atendimentos = JSON.parse(localStorage.getItem('atendimentos') || '[]');
+      console.log('Atendimentos antes da atualização:', atendimentos);
       
       // Atualizar o atendimento específico
       const atendimentosAtualizados = atendimentos.map((atendimento: any) => 
         atendimento.id === id 
-          ? { ...atendimento, ...formData }
+          ? { ...formData }
           : atendimento
       );
 
-      // Salvar atendimentos atualizados
-      saveAtendimentos(atendimentosAtualizados);
+      console.log('Atendimentos após atualização:', atendimentosAtualizados);
+      
+      // Salvar atendimentos atualizados diretamente no localStorage
+      localStorage.setItem('atendimentos', JSON.stringify(atendimentosAtualizados));
 
       toast({
         title: "Atendimento atualizado",
@@ -222,7 +233,7 @@ const EditarAtendimento = () => {
       <main className="container mx-auto py-8 px-4">
         <Card className="max-w-4xl mx-auto border-blue-100 shadow-md">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-100">
-            <CardTitle className="text-[#0EA5E9]">Editar Atendimento</CardTitle>
+            <CardTitle className="text-[#0EA5E9]">Editar Atendimento - {formData.nome}</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
