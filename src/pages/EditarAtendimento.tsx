@@ -11,29 +11,19 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
-
-interface AtendimentoFormData {
-  id: string;
-  nome: string;
-  dataAtendimento: string;
-  tipoServico: string;
-  valor: string;
-  statusPagamento: string;
-  dataNascimento: string;
-  signo: string;
-  destino: string;
-  ano: string;
-  detalhes: string;
-  tratamento: string;
-  indicacao: string;
-  atencaoFlag: boolean;
-  atencaoNota: string;
-}
+import useUserDataService from "@/services/userDataService";
+import { 
+  AtendimentoFormData, 
+  ValidationErrors, 
+  validateAtendimentoForm, 
+  calcularSigno 
+} from "@/components/forms/AtendimentoFormValidation";
 
 const EditarAtendimento = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
+  const userDataService = useUserDataService();
 
   const [formData, setFormData] = useState<AtendimentoFormData>({
     id: '',
@@ -54,21 +44,27 @@ const EditarAtendimento = () => {
   });
 
   const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState<ValidationErrors>({});
 
   useEffect(() => {
     const carregarAtendimento = () => {
+      if (!id) {
+        toast({
+          title: "ID inválido",
+          description: "ID do atendimento não foi fornecido.",
+          variant: "destructive",
+        });
+        navigate('/');
+        return;
+      }
+
       try {
-        // Buscar diretamente no localStorage
-        const atendimentos = JSON.parse(localStorage.getItem('atendimentos') || '[]');
-        console.log('Atendimentos encontrados:', atendimentos);
-        console.log('ID procurado:', id);
-        
-        const atendimento = atendimentos.find((a: any) => a.id === id);
-        console.log('Atendimento encontrado:', atendimento);
+        const atendimentos = userDataService.getAtendimentos();
+        const atendimento = atendimentos.find((a: AtendimentoFormData) => a.id === id);
         
         if (atendimento) {
           setFormData({
-            id: atendimento.id || '',
+            id: atendimento.id,
             nome: atendimento.nome || '',
             dataAtendimento: atendimento.dataAtendimento || '',
             tipoServico: atendimento.tipoServico || '',
@@ -81,7 +77,7 @@ const EditarAtendimento = () => {
             detalhes: atendimento.detalhes || '',
             tratamento: atendimento.tratamento || '',
             indicacao: atendimento.indicacao || '',
-            atencaoFlag: atendimento.atencaoFlag || false,
+            atencaoFlag: Boolean(atendimento.atencaoFlag),
             atencaoNota: atendimento.atencaoNota || ''
           });
         } else {
@@ -105,84 +101,53 @@ const EditarAtendimento = () => {
       }
     };
 
-    if (id) {
-      carregarAtendimento();
-    } else {
-      navigate('/');
-    }
-  }, [id, navigate, toast]);
-
-  const calcularSigno = (dataNascimento: string) => {
-    if (!dataNascimento) return '';
-    
-    const date = new Date(dataNascimento);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    
-    if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return "Áries";
-    else if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return "Touro";
-    else if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return "Gêmeos";
-    else if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return "Câncer";
-    else if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return "Leão";
-    else if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return "Virgem";
-    else if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return "Libra";
-    else if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return "Escorpião";
-    else if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return "Sagitário";
-    else if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return "Capricórnio";
-    else if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return "Aquário";
-    else return "Peixes";
-  };
+    carregarAtendimento();
+  }, [id, navigate, toast, userDataService]);
 
   const handleInputChange = (field: keyof AtendimentoFormData, value: any) => {
-    console.log(`Alterando campo ${field} para:`, value);
-    
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
       
       // Auto-calcular signo quando data de nascimento mudar
       if (field === 'dataNascimento') {
-        const signo = calcularSigno(value);
-        newData.signo = signo;
+        newData.signo = calcularSigno(value);
       }
       
-      console.log('Novo formData:', newData);
       return newData;
     });
+
+    // Limpar erro do campo quando ele for alterado
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
   const handleSalvar = () => {
-    console.log('Tentando salvar:', formData);
+    const validationErrors = validateAtendimentoForm(formData);
     
-    // Validação básica
-    if (!formData.nome.trim() || !formData.dataAtendimento || !formData.tipoServico) {
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha pelo menos o nome, data e tipo de serviço.",
+        title: "Campos inválidos",
+        description: "Por favor, corrija os erros no formulário.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Buscar atendimentos atuais diretamente do localStorage
-      const atendimentos = JSON.parse(localStorage.getItem('atendimentos') || '[]');
-      console.log('Atendimentos antes da atualização:', atendimentos);
-      
-      // Atualizar o atendimento específico
-      const atendimentosAtualizados = atendimentos.map((atendimento: any) => 
+      const atendimentos = userDataService.getAtendimentos();
+      const atendimentosAtualizados = atendimentos.map((atendimento: AtendimentoFormData) => 
         atendimento.id === id 
-          ? { ...formData }
+          ? { ...formData, dataUltimaEdicao: new Date().toISOString() }
           : atendimento
       );
 
-      console.log('Atendimentos após atualização:', atendimentosAtualizados);
-      
-      // Salvar atendimentos atualizados diretamente no localStorage
-      localStorage.setItem('atendimentos', JSON.stringify(atendimentosAtualizados));
+      userDataService.saveAtendimentos(atendimentosAtualizados);
 
       toast({
-        title: "Atendimento atualizado",
-        description: "O atendimento foi atualizado com sucesso.",
+        title: "Sucesso",
+        description: "Atendimento atualizado com sucesso.",
         variant: "default",
       });
 
@@ -191,7 +156,7 @@ const EditarAtendimento = () => {
       console.error('Erro ao salvar atendimento:', error);
       toast({
         title: "Erro",
-        description: "Erro ao salvar o atendimento.",
+        description: "Erro ao salvar o atendimento. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -233,7 +198,9 @@ const EditarAtendimento = () => {
       <main className="container mx-auto py-8 px-4">
         <Card className="max-w-4xl mx-auto border-blue-100 shadow-md">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-100">
-            <CardTitle className="text-[#0EA5E9]">Editar Atendimento - {formData.nome}</CardTitle>
+            <CardTitle className="text-[#0EA5E9]">
+              Editar Atendimento - {formData.nome || 'Carregando...'}
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -246,7 +213,9 @@ const EditarAtendimento = () => {
                     value={formData.nome}
                     onChange={(e) => handleInputChange('nome', e.target.value)}
                     placeholder="Digite o nome completo"
+                    className={errors.nome ? 'border-red-500' : ''}
                   />
+                  {errors.nome && <p className="text-red-500 text-sm mt-1">{errors.nome}</p>}
                 </div>
 
                 <div>
@@ -256,13 +225,18 @@ const EditarAtendimento = () => {
                     type="date"
                     value={formData.dataAtendimento}
                     onChange={(e) => handleInputChange('dataAtendimento', e.target.value)}
+                    className={errors.dataAtendimento ? 'border-red-500' : ''}
                   />
+                  {errors.dataAtendimento && <p className="text-red-500 text-sm mt-1">{errors.dataAtendimento}</p>}
                 </div>
 
                 <div>
                   <Label htmlFor="tipoServico">Tipo de Serviço *</Label>
-                  <Select value={formData.tipoServico} onValueChange={(value) => handleInputChange('tipoServico', value)}>
-                    <SelectTrigger>
+                  <Select 
+                    value={formData.tipoServico} 
+                    onValueChange={(value) => handleInputChange('tipoServico', value)}
+                  >
+                    <SelectTrigger className={errors.tipoServico ? 'border-red-500' : ''}>
                       <SelectValue placeholder="Selecione o serviço" />
                     </SelectTrigger>
                     <SelectContent>
@@ -274,6 +248,7 @@ const EditarAtendimento = () => {
                       <SelectItem value="outros">Outros</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.tipoServico && <p className="text-red-500 text-sm mt-1">{errors.tipoServico}</p>}
                 </div>
 
                 <div>
@@ -285,12 +260,17 @@ const EditarAtendimento = () => {
                     value={formData.valor}
                     onChange={(e) => handleInputChange('valor', e.target.value)}
                     placeholder="0,00"
+                    className={errors.valor ? 'border-red-500' : ''}
                   />
+                  {errors.valor && <p className="text-red-500 text-sm mt-1">{errors.valor}</p>}
                 </div>
 
                 <div>
                   <Label htmlFor="statusPagamento">Status do Pagamento</Label>
-                  <Select value={formData.statusPagamento} onValueChange={(value) => handleInputChange('statusPagamento', value)}>
+                  <Select 
+                    value={formData.statusPagamento} 
+                    onValueChange={(value) => handleInputChange('statusPagamento', value)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
