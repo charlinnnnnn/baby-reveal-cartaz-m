@@ -277,7 +277,7 @@ const FrequencyAnalysisForm: React.FC<FrequencyAnalysisFormProps> = ({
                   <Input
                     type="number"
                     placeholder="10"
-                    {...field}
+                    value={field.value}
                     onChange={(e) => field.onChange(Number(e.target.value))}
                   />
                 </FormControl>
@@ -298,7 +298,7 @@ const FrequencyAnalysisForm: React.FC<FrequencyAnalysisFormProps> = ({
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    {...field}
+                    value={field.value}
                     onChange={(e) => field.onChange(Number(e.target.value))}
                   />
                 </FormControl>
@@ -425,6 +425,7 @@ const FrequencyAnalysisForm: React.FC<FrequencyAnalysisFormProps> = ({
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
+                        type="button"
                         variant="outline"
                         className="w-full justify-start text-left font-normal"
                       >
