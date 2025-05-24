@@ -19,6 +19,8 @@ import useUserDataService from "@/services/userDataService";
 import { useToast } from "@/hooks/use-toast";
 import ReportManager from "@/components/ReportManager";
 import BirthdayNotifications from "@/components/BirthdayNotifications";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 declare module 'jspdf' {
   interface jsPDF {
