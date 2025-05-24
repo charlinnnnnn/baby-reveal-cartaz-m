@@ -108,7 +108,7 @@ const RelatorioGeral = () => {
         body: tableRows,
         startY: yPos,
         styles: { fontSize: 10, cellPadding: 3 },
-        headerStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255] }
+        headStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255] }
       });
       
       yPos = (doc as any).lastAutoTable.finalY + 15;
@@ -258,7 +258,7 @@ const RelatorioGeral = () => {
         body: tableRows,
         startY: yPos,
         styles: { fontSize: 10, cellPadding: 3 },
-        headerStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255] }
+        headStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255] }
       });
       
       // Rodapé

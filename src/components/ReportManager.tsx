@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, User } from 'lucide-react';
@@ -59,7 +58,7 @@ const ReportManager: React.FC<ReportManagerProps> = ({ variant = 'home' }) => {
         body: tableRows,
         startY: yPos,
         styles: { fontSize: 10, cellPadding: 3 },
-        headerStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255] }
+        headStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255] }
       });
       
       // Footer

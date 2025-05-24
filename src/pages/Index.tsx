@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, Activity, Pencil, Trash2, BarChart3 } from "lucide-react";
+import { CalendarDays, Activity, Pencil, Trash2, BarChart3, FileText } from "lucide-react";
 import { Users } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
