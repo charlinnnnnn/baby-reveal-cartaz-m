@@ -1,8 +1,27 @@
 
 import useUserDataService from "@/services/userDataService";
 
+interface AtendimentoData {
+  id: string;
+  nome: string;
+  dataNascimento: string;
+  signo: string;
+  tipoServico: string;
+  statusPagamento: string;
+  dataAtendimento: string;
+  valor: string;
+  destino: string;
+  ano: string;
+  atencaoNota: string;
+  detalhes: string;
+  tratamento: string;
+  indicacao: string;
+  atencaoFlag: boolean;
+  data: string;
+}
+
 // Function to save a new atendimento
-export const saveNewAtendimento = (atendimento, userDataService) => {
+export const saveNewAtendimento = (atendimento: AtendimentoData, userDataService: ReturnType<typeof useUserDataService>) => {
   const { getAtendimentos, saveAtendimentos } = userDataService;
   
   // Get current atendimentos
@@ -18,7 +37,7 @@ export const saveNewAtendimento = (atendimento, userDataService) => {
 };
 
 // Function to update an existing atendimento
-export const updateAtendimento = (id, updatedAtendimento, userDataService) => {
+export const updateAtendimento = (id: string, updatedAtendimento: Partial<AtendimentoData>, userDataService: ReturnType<typeof useUserDataService>) => {
   const { getAtendimentos, saveAtendimentos } = userDataService;
   
   // Get current atendimentos
@@ -36,7 +55,7 @@ export const updateAtendimento = (id, updatedAtendimento, userDataService) => {
 };
 
 // Function to save a new tarot analysis
-export const saveNewTarotAnalysis = (analysis, userDataService) => {
+export const saveNewTarotAnalysis = (analysis: any, userDataService: ReturnType<typeof useUserDataService>) => {
   const { getTarotAnalyses, saveTarotAnalyses } = userDataService;
   
   // Get current analyses
@@ -52,7 +71,7 @@ export const saveNewTarotAnalysis = (analysis, userDataService) => {
 };
 
 // Function to update an existing tarot analysis
-export const updateTarotAnalysis = (id, updatedAnalysis, userDataService) => {
+export const updateTarotAnalysis = (id: string, updatedAnalysis: any, userDataService: ReturnType<typeof useUserDataService>) => {
   const { getTarotAnalyses, saveTarotAnalyses } = userDataService;
   
   // Get current analyses
