@@ -1,100 +1,92 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Save } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import Logo from "@/components/Logo";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Save, AlertTriangle, Cake } from "lucide-react";
+import { toast } from "sonner";
 import useUserDataService from "@/services/userDataService";
-import { 
-  AtendimentoFormData, 
-  ValidationErrors, 
-  validateAtendimentoForm, 
-  calcularSigno 
-} from "@/components/forms/AtendimentoFormValidation";
+import BirthdayNotifications from "@/components/BirthdayNotifications";
+import Logo from "@/components/Logo";
 
 const EditarAtendimento = () => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
-  const { toast } = useToast();
-  const userDataService = useUserDataService();
-
-  const [formData, setFormData] = useState<AtendimentoFormData>({
-    id: '',
-    nome: '',
-    dataAtendimento: '',
-    tipoServico: '',
-    valor: '',
-    statusPagamento: 'pendente',
-    dataNascimento: '',
-    signo: '',
-    destino: '',
-    ano: '',
-    detalhes: '',
-    tratamento: '',
-    indicacao: '',
-    atencaoFlag: false,
-    atencaoNota: ''
-  });
-
+  const { id } = useParams();
+  const { getAtendimentos, saveAtendimentos, checkBirthdays } = useUserDataService();
+  const [dataNascimento, setDataNascimento] = useState("");
+  const [signo, setSigno] = useState("");
+  const [atencao, setAtencao] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [formData, setFormData] = useState({
+    nome: "",
+    dataNascimento: "",
+    tipoServico: "",
+    statusPagamento: "",
+    dataAtendimento: "",
+    valor: "",
+    destino: "",
+    ano: "",
+    atencaoNota: "",
+    detalhes: "",
+    tratamento: "",
+    indicacao: "",
+  });
 
   useEffect(() => {
     const carregarAtendimento = () => {
       if (!id) {
-        toast({
-          title: "ID inválido",
-          description: "ID do atendimento não foi fornecido.",
-          variant: "destructive",
-        });
+        toast.error("ID do atendimento não fornecido");
         navigate('/');
         return;
       }
 
       try {
-        const atendimentos = userDataService.getAtendimentos();
-        const atendimento = atendimentos.find((a: AtendimentoFormData) => a.id === id);
+        const atendimentos = getAtendimentos();
+        const atendimento = atendimentos.find(a => a.id === id);
         
         if (atendimento) {
           setFormData({
-            id: atendimento.id,
-            nome: atendimento.nome || '',
-            dataAtendimento: atendimento.dataAtendimento || '',
-            tipoServico: atendimento.tipoServico || '',
-            valor: atendimento.valor || '',
-            statusPagamento: atendimento.statusPagamento || 'pendente',
-            dataNascimento: atendimento.dataNascimento || '',
-            signo: atendimento.signo || '',
-            destino: atendimento.destino || '',
-            ano: atendimento.ano || '',
-            detalhes: atendimento.detalhes || '',
-            tratamento: atendimento.tratamento || '',
-            indicacao: atendimento.indicacao || '',
-            atencaoFlag: Boolean(atendimento.atencaoFlag),
-            atencaoNota: atendimento.atencaoNota || ''
+            nome: atendimento.nome || "",
+            dataNascimento: atendimento.dataNascimento || "",
+            tipoServico: atendimento.tipoServico || "",
+            statusPagamento: atendimento.statusPagamento || "",
+            dataAtendimento: atendimento.dataAtendimento || "",
+            valor: atendimento.valor || "",
+            destino: atendimento.destino || "",
+            ano: atendimento.ano || "",
+            atencaoNota: atendimento.atencaoNota || "",
+            detalhes: atendimento.detalhes || "",
+            tratamento: atendimento.tratamento || "",
+            indicacao: atendimento.indicacao || "",
           });
+          
+          setDataNascimento(atendimento.dataNascimento || "");
+          setSigno(atendimento.signo || "");
+          setAtencao(Boolean(atendimento.atencaoFlag));
         } else {
-          toast({
-            title: "Atendimento não encontrado",
-            description: "O atendimento que você está tentando editar não foi encontrado.",
-            variant: "destructive",
-          });
+          toast.error("Atendimento não encontrado");
           navigate('/');
         }
       } catch (error) {
         console.error('Erro ao carregar atendimento:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar o atendimento.",
-          variant: "destructive",
-        });
+        toast.error("Erro ao carregar o atendimento");
         navigate('/');
       } finally {
         setLoading(false);
@@ -102,69 +94,139 @@ const EditarAtendimento = () => {
     };
 
     carregarAtendimento();
-  }, [id, navigate, toast, userDataService]);
+  }, [id, navigate, getAtendimentos]);
 
-  const handleInputChange = (field: keyof AtendimentoFormData, value: any) => {
-    setFormData(prev => {
-      const newData = { ...prev, [field]: value };
-      
-      // Auto-calcular signo quando data de nascimento mudar
-      if (field === 'dataNascimento') {
-        newData.signo = calcularSigno(value);
-      }
-      
-      return newData;
+  const handleInputChange = (e) => {
+    const { id, value } = e.target;
+    setFormData({
+      ...formData,
+      [id]: value,
     });
+  };
 
-    // Limpar erro do campo quando ele for alterado
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+  const handleSelectChange = (field, value) => {
+    setFormData({
+      ...formData,
+      [field]: value,
+    });
+  };
+
+  const checkIfBirthday = (birthDate) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    
+    if (birth.getDate() === today.getDate() && birth.getMonth() === today.getMonth()) {
+      const age = today.getFullYear() - birth.getFullYear();
+      toast.success(
+        `🎉 Hoje é aniversário desta pessoa! ${age} anos`,
+        {
+          duration: 8000,
+          icon: <Cake className="h-5 w-5" />,
+          description: "Não esqueça de parabenizar!"
+        }
+      );
     }
   };
 
-  const handleSalvar = () => {
-    const validationErrors = validateAtendimentoForm(formData);
+  const handleDataNascimentoChange = (e) => {
+    const value = e.target.value;
+    setDataNascimento(value);
+    setFormData({
+      ...formData,
+      dataNascimento: value,
+    });
     
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      toast({
-        title: "Campos inválidos",
-        description: "Por favor, corrija os erros no formulário.",
-        variant: "destructive",
-      });
+    // Check if it's birthday
+    if (value) {
+      checkIfBirthday(value);
+    }
+    
+    // Lógica simples para determinar o signo baseado na data de nascimento
+    if (value) {
+      const date = new Date(value);
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      
+      let signoCalculado = "";
+      if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) signoCalculado = "Áries";
+      else if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) signoCalculado = "Touro";
+      else if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) signoCalculado = "Gêmeos";
+      else if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) signoCalculado = "Câncer";
+      else if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) signoCalculado = "Leão";
+      else if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) signoCalculado = "Virgem";
+      else if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) signoCalculado = "Libra";
+      else if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) signoCalculado = "Escorpião";
+      else if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) signoCalculado = "Sagitário";
+      else if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) signoCalculado = "Capricórnio";
+      else if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) signoCalculado = "Aquário";
+      else signoCalculado = "Peixes";
+      
+      setSigno(signoCalculado);
+    } else {
+      setSigno("");
+    }
+  };
+
+  const handleSalvarAtendimento = () => {
+    // Validações básicas
+    if (!formData.nome.trim()) {
+      toast.error("Nome é obrigatório");
+      return;
+    }
+
+    if (!formData.dataAtendimento) {
+      toast.error("Data do atendimento é obrigatória");
       return;
     }
 
     try {
-      const atendimentos = userDataService.getAtendimentos();
-      const atendimentosAtualizados = atendimentos.map((atendimento: AtendimentoFormData) => 
-        atendimento.id === id 
-          ? { ...formData, dataUltimaEdicao: new Date().toISOString() }
-          : atendimento
+      // Get existing atendimentos from user data service
+      const existingAtendimentos = getAtendimentos();
+      
+      const atendimentoAtualizado = {
+        id: id,
+        ...formData,
+        signo,
+        atencaoFlag: atencao,
+        dataUltimaEdicao: new Date().toISOString(),
+      };
+      
+      // Update the specific atendimento
+      const atendimentosAtualizados = existingAtendimentos.map(atendimento => 
+        atendimento.id === id ? atendimentoAtualizado : atendimento
       );
-
-      userDataService.saveAtendimentos(atendimentosAtualizados);
-
-      toast({
-        title: "Sucesso",
-        description: "Atendimento atualizado com sucesso.",
-        variant: "default",
-      });
-
-      navigate('/');
+      
+      // Save back using user data service
+      saveAtendimentos(atendimentosAtualizados);
+      
+      // Show success message
+      toast.success("Atendimento atualizado com sucesso!");
+      
+      // Navigate back to home page
+      navigate("/");
     } catch (error) {
       console.error('Erro ao salvar atendimento:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar o atendimento. Tente novamente.",
-        variant: "destructive",
-      });
+      toast.error("Erro ao salvar o atendimento");
+    }
+  };
+  
+  // Helper function to get status color
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "pago":
+        return "bg-green-500 text-white border-green-600";
+      case "pendente":
+        return "bg-yellow-500 text-white border-yellow-600";
+      case "parcelado":
+        return "bg-red-500 text-white border-red-600";
+      default:
+        return "bg-gray-200 text-gray-800 border-gray-300";
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Logo height={60} width={60} />
           <p className="mt-4 text-gray-600">Carregando atendimento...</p>
@@ -174,235 +236,209 @@ const EditarAtendimento = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Header */}
-      <header className="bg-white shadow-md py-4 px-6 border-b border-blue-100">
-        <div className="container mx-auto flex items-center">
+    <div className="min-h-screen bg-gray-50 py-6 px-4">
+      <BirthdayNotifications checkOnMount={false} />
+      
+      <div className="container mx-auto max-w-4xl">
+        <div className="mb-6 flex items-center">
           <Button 
             variant="ghost" 
-            className="mr-4" 
+            className="mr-2" 
             onClick={() => navigate('/')}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-3">
             <Logo height={40} width={40} />
-            <h1 className="text-2xl font-bold text-[#0EA5E9]">
+            <h1 className="text-2xl font-bold text-[#2196F3]">
               Editar Atendimento
             </h1>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto py-8 px-4">
-        <Card className="max-w-4xl mx-auto border-blue-100 shadow-md">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-100">
-            <CardTitle className="text-[#0EA5E9]">
-              Editar Atendimento - {formData.nome || 'Carregando...'}
-            </CardTitle>
+        <Card className="border-[#C5A3E0] shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-[#2196F3]">Edição de Atendimento</CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Dados Básicos */}
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="nome">Nome Completo *</Label>
-                  <Input
-                    id="nome"
-                    value={formData.nome}
-                    onChange={(e) => handleInputChange('nome', e.target.value)}
-                    placeholder="Digite o nome completo"
-                    className={errors.nome ? 'border-red-500' : ''}
-                  />
-                  {errors.nome && <p className="text-red-500 text-sm mt-1">{errors.nome}</p>}
-                </div>
-
-                <div>
-                  <Label htmlFor="dataAtendimento">Data do Atendimento *</Label>
-                  <Input
-                    id="dataAtendimento"
-                    type="date"
-                    value={formData.dataAtendimento}
-                    onChange={(e) => handleInputChange('dataAtendimento', e.target.value)}
-                    className={errors.dataAtendimento ? 'border-red-500' : ''}
-                  />
-                  {errors.dataAtendimento && <p className="text-red-500 text-sm mt-1">{errors.dataAtendimento}</p>}
-                </div>
-
-                <div>
-                  <Label htmlFor="tipoServico">Tipo de Serviço *</Label>
-                  <Select 
-                    value={formData.tipoServico} 
-                    onValueChange={(value) => handleInputChange('tipoServico', value)}
-                  >
-                    <SelectTrigger className={errors.tipoServico ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Selecione o serviço" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="consulta-tarot">Consulta de Tarot</SelectItem>
-                      <SelectItem value="consulta-baralho-cigano">Consulta Baralho Cigano</SelectItem>
-                      <SelectItem value="consulta-runas">Consulta de Runas</SelectItem>
-                      <SelectItem value="mapa-astral">Mapa Astral</SelectItem>
-                      <SelectItem value="numerologia">Numerologia</SelectItem>
-                      <SelectItem value="outros">Outros</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.tipoServico && <p className="text-red-500 text-sm mt-1">{errors.tipoServico}</p>}
-                </div>
-
-                <div>
-                  <Label htmlFor="valor">Valor (R$)</Label>
-                  <Input
-                    id="valor"
-                    type="number"
-                    step="0.01"
-                    value={formData.valor}
-                    onChange={(e) => handleInputChange('valor', e.target.value)}
-                    placeholder="0,00"
-                    className={errors.valor ? 'border-red-500' : ''}
-                  />
-                  {errors.valor && <p className="text-red-500 text-sm mt-1">{errors.valor}</p>}
-                </div>
-
-                <div>
-                  <Label htmlFor="statusPagamento">Status do Pagamento</Label>
-                  <Select 
-                    value={formData.statusPagamento} 
-                    onValueChange={(value) => handleInputChange('statusPagamento', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pago">Pago</SelectItem>
-                      <SelectItem value="pendente">Pendente</SelectItem>
-                      <SelectItem value="parcelado">Parcelado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome do Cliente</Label>
+                <Input 
+                  id="nome" 
+                  placeholder="Nome completo" 
+                  value={formData.nome}
+                  onChange={handleInputChange}
+                />
               </div>
 
-              {/* Dados Pessoais */}
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="dataNascimento">Data de Nascimento</Label>
-                  <Input
-                    id="dataNascimento"
-                    type="date"
-                    value={formData.dataNascimento}
-                    onChange={(e) => handleInputChange('dataNascimento', e.target.value)}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="dataNascimento">Data de Nascimento</Label>
+                <Input 
+                  id="dataNascimento" 
+                  type="date" 
+                  value={dataNascimento}
+                  onChange={handleDataNascimentoChange}
+                />
+              </div>
 
-                <div>
-                  <Label htmlFor="signo">Signo</Label>
-                  <Input
-                    id="signo"
-                    value={formData.signo}
-                    readOnly
-                    className="bg-gray-50"
-                    placeholder="Calculado automaticamente"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="signo">Signo</Label>
+                <Input id="signo" value={signo} readOnly className="bg-gray-50" />
+              </div>
 
-                <div>
-                  <Label htmlFor="destino">Destino</Label>
-                  <Input
-                    id="destino"
-                    value={formData.destino}
-                    onChange={(e) => handleInputChange('destino', e.target.value)}
-                    placeholder="Número do destino"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="tipoServico">Tipo de Serviço</Label>
+                <Select value={formData.tipoServico} onValueChange={(value) => handleSelectChange("tipoServico", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tarot">Tarot</SelectItem>
+                    <SelectItem value="terapia">Terapia</SelectItem>
+                    <SelectItem value="mesa-radionica">Mesa Radiônica</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div>
-                  <Label htmlFor="ano">Ano Pessoal</Label>
-                  <Input
-                    id="ano"
-                    value={formData.ano}
-                    onChange={(e) => handleInputChange('ano', e.target.value)}
-                    placeholder="Ano pessoal"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="dataAtendimento">Data do Atendimento</Label>
+                <Input 
+                  id="dataAtendimento" 
+                  type="date" 
+                  value={formData.dataAtendimento}
+                  onChange={handleInputChange}
+                />
+              </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="valor">Valor Cobrado (R$)</Label>
+                <Input 
+                  id="valor" 
+                  type="number" 
+                  placeholder="0.00" 
+                  value={formData.valor}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="statusPagamento">Status de Pagamento</Label>
+                <Select value={formData.statusPagamento} onValueChange={(value) => handleSelectChange("statusPagamento", value)}>
+                  <SelectTrigger className={formData.statusPagamento ? `border-2 ${getStatusColor(formData.statusPagamento)}` : ""}>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pago" className="bg-green-100 text-green-800 hover:bg-green-200">Pago</SelectItem>
+                    <SelectItem value="pendente" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">Pendente</SelectItem>
+                    <SelectItem value="parcelado" className="bg-red-100 text-red-800 hover:bg-red-200">Parcelado</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {formData.statusPagamento && (
+                  <div className={`mt-2 px-3 py-1 rounded-md text-sm flex items-center ${getStatusColor(formData.statusPagamento)}`}>
+                    <span className={`h-3 w-3 rounded-full mr-2 ${
+                      formData.statusPagamento === 'pago' ? 'bg-white' : 
+                      formData.statusPagamento === 'pendente' ? 'bg-white' : 'bg-white'
+                    }`}></span>
+                    <span className="capitalize">{formData.statusPagamento}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="destino">Destino</Label>
+                <Input 
+                  id="destino" 
+                  placeholder="Destino do cliente" 
+                  value={formData.destino}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ano">Ano</Label>
+                <Input 
+                  id="ano" 
+                  placeholder="Ano específico" 
+                  value={formData.ano}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2 flex flex-col">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="atencaoFlag">Marcar com Atenção</Label>
-                  <Switch
-                    id="atencaoFlag"
-                    checked={formData.atencaoFlag}
-                    onCheckedChange={(checked) => handleInputChange('atencaoFlag', checked)}
+                  <Label htmlFor="atencao" className="text-base flex items-center">
+                    <AlertTriangle className={`mr-2 h-4 w-4 ${atencao ? "text-red-500" : "text-gray-400"}`} />
+                    ATENÇÃO
+                  </Label>
+                  <Switch 
+                    checked={atencao} 
+                    onCheckedChange={setAtencao} 
+                    className="data-[state=checked]:bg-red-500"
                   />
                 </div>
+                <Input 
+                  id="atencaoNota" 
+                  placeholder="Pontos de atenção" 
+                  className={atencao ? "border-red-500 bg-red-50" : ""}
+                  value={formData.atencaoNota}
+                  onChange={handleInputChange}
+                />
               </div>
             </div>
 
-            {/* Campos de texto grandes */}
-            <div className="mt-6 space-y-4">
-              <div>
-                <Label htmlFor="detalhes">Detalhes da Consulta</Label>
-                <Textarea
-                  id="detalhes"
-                  value={formData.detalhes}
-                  onChange={(e) => handleInputChange('detalhes', e.target.value)}
-                  placeholder="Descreva os detalhes da consulta..."
-                  className="min-h-[100px]"
-                />
-              </div>
+            <div className="mt-6 space-y-2">
+              <Label htmlFor="detalhes">Detalhes da Sessão</Label>
+              <Textarea 
+                id="detalhes" 
+                placeholder="Revelações, conselhos e orientações..." 
+                className="min-h-[120px]"
+                value={formData.detalhes}
+                onChange={handleInputChange}
+              />
+            </div>
 
-              <div>
-                <Label htmlFor="tratamento">Tratamento Sugerido</Label>
-                <Textarea
-                  id="tratamento"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="space-y-2">
+                <Label htmlFor="tratamento">Tratamento</Label>
+                <Textarea 
+                  id="tratamento" 
+                  placeholder="Observações sobre o tratamento..." 
+                  className="min-h-[100px]"
                   value={formData.tratamento}
-                  onChange={(e) => handleInputChange('tratamento', e.target.value)}
-                  placeholder="Descreva o tratamento sugerido..."
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="indicacao">Indicação</Label>
+                <Textarea 
+                  id="indicacao" 
+                  placeholder="Informações adicionais e indicações..." 
                   className="min-h-[100px]"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="indicacao">Como nos conheceu</Label>
-                <Textarea
-                  id="indicacao"
                   value={formData.indicacao}
-                  onChange={(e) => handleInputChange('indicacao', e.target.value)}
-                  placeholder="Como o cliente nos conheceu..."
+                  onChange={handleInputChange}
                 />
               </div>
-
-              {formData.atencaoFlag && (
-                <div>
-                  <Label htmlFor="atencaoNota">Nota de Atenção</Label>
-                  <Textarea
-                    id="atencaoNota"
-                    value={formData.atencaoNota}
-                    onChange={(e) => handleInputChange('atencaoNota', e.target.value)}
-                    placeholder="Descreva o motivo da atenção especial..."
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Botões */}
-            <div className="mt-8 flex justify-end gap-4">
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/')}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                onClick={handleSalvar}
-                className="bg-[#0EA5E9] hover:bg-[#0284C7]"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Salvar Alterações
-              </Button>
             </div>
           </CardContent>
+          <CardFooter className="flex justify-end gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/')}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              className="bg-[#2196F3] hover:bg-[#1976D2]"
+              onClick={handleSalvarAtendimento}
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Salvar Alterações
+            </Button>
+          </CardFooter>
         </Card>
-      </main>
+      </div>
     </div>
   );
 };
