@@ -35,6 +35,7 @@ interface AnaliseFrequencial {
   dataInicio: string;
   preco: string;
   finalizado: boolean;
+  dataNascimento?: string;
   signo?: string;
   analiseAntes?: string;
   analiseDepois?: string;
