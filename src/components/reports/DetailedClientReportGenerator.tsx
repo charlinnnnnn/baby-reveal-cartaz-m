@@ -31,7 +31,11 @@ const DetailedClientReportGenerator: React.FC<DetailedClientReportGeneratorProps
       
       // Header
       doc.setFontSize(18);
-      doc.setTextColor(variant === 'tarot' ? 124, 100, 244 : 14, 165, 233);
+      if (variant === 'tarot') {
+        doc.setTextColor(124, 100, 244);
+      } else {
+        doc.setTextColor(14, 165, 233);
+      }
       const reportTitle = variant === 'tarot' ? 
         `🔮 Relatório Tarot Frequencial: ${clientName}` : 
         `🔹 Relatório Geral do Cliente: ${clientName}`;
@@ -97,7 +101,11 @@ const DetailedClientReportGenerator: React.FC<DetailedClientReportGeneratorProps
       
       // Detailed appointments section
       doc.setFontSize(14);
-      doc.setTextColor(variant === 'tarot' ? 124, 100, 244 : 14, 165, 233);
+      if (variant === 'tarot') {
+        doc.setTextColor(124, 100, 244);
+      } else {
+        doc.setTextColor(14, 165, 233);
+      }
       doc.text(`🗂️ Detalhes ${variant === 'tarot' ? 'das Análises' : 'dos Atendimentos'}:`, 14, yPos);
       yPos += 10;
       

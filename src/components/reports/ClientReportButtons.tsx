@@ -31,7 +31,11 @@ const ClientReportButtons: React.FC<ClientReportButtonsProps> = ({
       
       // Header
       doc.setFontSize(18);
-      doc.setTextColor(variant === 'tarot' ? 124, 100, 244 : 14, 165, 233);
+      if (variant === 'tarot') {
+        doc.setTextColor(124, 100, 244);
+      } else {
+        doc.setTextColor(14, 165, 233);
+      }
       const reportTitle = variant === 'tarot' ? 
         `🔮 Relatório Tarot Frequencial: ${clientName}` : 
         `🔹 Relatório Geral do Cliente: ${clientName}`;
