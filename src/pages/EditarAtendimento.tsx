@@ -286,7 +286,12 @@ const EditarAtendimento = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="signo">Signo</Label>
-                <Input id="signo" value={formData.signo} readOnly className="bg-gray-50" />
+                <Input 
+                  id="signo" 
+                  value={formData.signo} 
+                  onChange={(e) => handleInputChange('signo', e.target.value)}
+                  className="bg-white" 
+                />
               </div>
 
               <div className="space-y-2">

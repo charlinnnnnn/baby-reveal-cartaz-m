@@ -67,7 +67,7 @@ const RelatorioGeral = () => {
       
       // Add header
       doc.setFontSize(18);
-      doc.setTextColor(14, 165, 233); // Cor azul do Libertá
+      doc.setTextColor(14, 165, 233);
       doc.text(`Relatório Consolidado: ${cliente}`, 105, 15, { align: 'center' });
       
       // Client info
@@ -137,12 +137,10 @@ const RelatorioGeral = () => {
         }
         
         doc.setFontSize(12);
-        // Use font-weight instead of setFontStyle
         doc.setFont(undefined, 'bold');
         doc.text(`Atendimento ${index + 1}: ${a.dataAtendimento ? new Date(a.dataAtendimento).toLocaleDateString('pt-BR') : '-'}`, 14, yPos);
         yPos += 8;
         
-        // Reset to normal font
         doc.setFont(undefined, 'normal');
         doc.setFontSize(10);
         
@@ -194,6 +192,96 @@ const RelatorioGeral = () => {
       toast({
         title: "Relatório gerado",
         description: "O relatório consolidado foi baixado com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao baixar relatório",
+        description: "Ocorreu um erro ao gerar o arquivo PDF.",
+      });
+    }
+  };
+
+  const downloadGeralReport = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Cabeçalho
+      doc.setFontSize(18);
+      doc.setTextColor(14, 165, 233);
+      doc.text('Relatório Geral Consolidado', 105, 15, { align: 'center' });
+      
+      // Resumo financeiro
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      
+      let yPos = 30;
+      
+      doc.text(`Total de Clientes: ${clientesUnicos.length}`, 14, yPos);
+      yPos += 8;
+      doc.text(`Total de Atendimentos: ${atendimentos.length}`, 14, yPos);
+      yPos += 8;
+      doc.text(`Valor Total: R$ ${getTotalValue()}`, 14, yPos);
+      yPos += 8;
+      
+      // Contagem de status
+      const { pago, pendente, parcelado } = getStatusCounts();
+      doc.text(`Pagos: ${pago}`, 14, yPos);
+      yPos += 8;
+      doc.text(`Pendentes: ${pendente}`, 14, yPos);
+      yPos += 8;
+      doc.text(`Parcelados: ${parcelado}`, 14, yPos);
+      yPos += 15;
+      
+      // Configuração da tabela
+      const tableColumn = ["Cliente", "Atendimentos", "Valor Total", "Status"];
+      const tableRows = clientesUnicos.map(cliente => {
+        const atendimentosCliente = atendimentos.filter(a => a.nome === cliente);
+        const valorTotalCliente = atendimentosCliente.reduce((acc, curr) => acc + parseFloat(curr.valor || "0"), 0).toFixed(2);
+        
+        // Determine predominant status
+        const pagos = atendimentosCliente.filter(a => a.statusPagamento === 'pago').length;
+        const pendentes = atendimentosCliente.filter(a => a.statusPagamento === 'pendente').length;
+        const parcelados = atendimentosCliente.filter(a => a.statusPagamento === 'parcelado').length;
+        
+        let status = "Misto";
+        if (pagos > pendentes && pagos > parcelados) status = "Pago";
+        else if (pendentes > pagos && pendentes > parcelados) status = "Pendente";
+        else if (parcelados > pagos && parcelados > pendentes) status = "Parcelado";
+        
+        return [cliente, atendimentosCliente.length.toString(), `R$ ${valorTotalCliente}`, status];
+      });
+      
+      // Adicionar a tabela ao documento
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: yPos,
+        styles: { fontSize: 10, cellPadding: 3 },
+        headerStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255] }
+      });
+      
+      // Rodapé
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text(
+          `Libertá - Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} - Página ${i} de ${totalPages}`,
+          105,
+          doc.internal.pageSize.height - 10,
+          { align: 'center' }
+        );
+      }
+      
+      // Salvar o PDF
+      doc.save(`Relatorio_Geral_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
+      
+      toast({
+        title: "Relatório gerado",
+        description: "O relatório geral foi baixado com sucesso.",
       });
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
@@ -304,75 +392,7 @@ const RelatorioGeral = () => {
             </div>
             <Button 
               className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white"
-              onClick={() => {
-                const doc = new jsPDF();
-                
-                // Cabeçalho
-                doc.setFontSize(18);
-                doc.setTextColor(14, 165, 233);
-                doc.text('Relatório Geral Consolidado', 105, 15, { align: 'center' });
-                
-                // Resumo financeiro
-                doc.setFontSize(14);
-                doc.setTextColor(0, 0, 0);
-                doc.text(`Total de Clientes: ${clientesUnicos.length}`, 14, 30);
-                doc.text(`Total de Atendimentos: ${atendimentos.length}`, 14, 38);
-                doc.text(`Valor Total: R$ ${getTotalValue()}`, 14, 46);
-                
-                // Contagem de status
-                doc.text(`Pagos: ${pago}`, 14, 54);
-                doc.text(`Pendentes: ${pendente}`, 14, 62);
-                doc.text(`Parcelados: ${parcelado}`, 14, 70);
-                
-                // Posição inicial para a tabela
-                let startY = 80;
-                
-                // Configuração da tabela
-                const tableColumn = ["Cliente", "Atendimentos", "Valor Total", "Status"];
-                const tableRows = clientesUnicos.map(cliente => {
-                  const atendimentosCliente = atendimentos.filter(a => a.nome === cliente);
-                  const valorTotalCliente = atendimentosCliente.reduce((acc, curr) => acc + parseFloat(curr.valor || "0"), 0).toFixed(2);
-                  
-                  // Determine predominant status
-                  const pagos = atendimentosCliente.filter(a => a.statusPagamento === 'pago').length;
-                  const pendentes = atendimentosCliente.filter(a => a.statusPagamento === 'pendente').length;
-                  const parcelados = atendimentosCliente.filter(a => a.statusPagamento === 'parcelado').length;
-                  
-                  let status = "Misto";
-                  if (pagos > pendentes && pagos > parcelados) status = "Pago";
-                  else if (pendentes > pagos && pendentes > parcelados) status = "Pendente";
-                  else if (parcelados > pagos && parcelados > pendentes) status = "Parcelado";
-                  
-                  return [cliente, atendimentosCliente.length.toString(), `R$ ${valorTotalCliente}`, status];
-                });
-                
-                // Adicionar a tabela ao documento
-                doc.autoTable({
-                  head: [tableColumn],
-                  body: tableRows,
-                  startY: startY,
-                  styles: { fontSize: 10, cellPadding: 3 },
-                  headerStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255] }
-                });
-                
-                // Rodapé
-                doc.setFontSize(10);
-                doc.setTextColor(150);
-                doc.text(
-                  `Libertá - Relatório gerado em ${new Date().toLocaleDateString('pt-BR')}`,
-                  105,
-                  doc.internal.pageSize.height - 10,
-                  { align: 'center' }
-                );
-                
-                // Salvar o PDF
-                doc.save(`Relatorio_Geral_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
-                
-                toast({
-                  title: "Relatório gerado",
-                  description: "O relatório geral foi baixado com sucesso.",
-                });
-              }}
+              onClick={downloadGeralReport}
             >
               <FileDown className="mr-2 h-4 w-4" />
               Baixar Relatório Geral
