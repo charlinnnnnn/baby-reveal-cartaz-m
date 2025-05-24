@@ -29,10 +29,7 @@ import Logo from "@/components/Logo";
 const EditarAtendimento = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { getAtendimentos, saveAtendimentos, checkBirthdays } = useUserDataService();
-  const [dataNascimento, setDataNascimento] = useState("");
-  const [signo, setSigno] = useState("");
-  const [atencao, setAtencao] = useState(false);
+  const { getAtendimentos, saveAtendimentos } = useUserDataService();
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     nome: "",
@@ -47,6 +44,8 @@ const EditarAtendimento = () => {
     detalhes: "",
     tratamento: "",
     indicacao: "",
+    signo: "",
+    atencaoFlag: false,
   });
 
   useEffect(() => {
@@ -75,11 +74,9 @@ const EditarAtendimento = () => {
             detalhes: atendimento.detalhes || "",
             tratamento: atendimento.tratamento || "",
             indicacao: atendimento.indicacao || "",
+            signo: atendimento.signo || "",
+            atencaoFlag: Boolean(atendimento.atencaoFlag),
           });
-          
-          setDataNascimento(atendimento.dataNascimento || "");
-          setSigno(atendimento.signo || "");
-          setAtencao(Boolean(atendimento.atencaoFlag));
         } else {
           toast.error("Atendimento não encontrado");
           navigate('/');
@@ -130,7 +127,6 @@ const EditarAtendimento = () => {
 
   const handleDataNascimentoChange = (e) => {
     const value = e.target.value;
-    setDataNascimento(value);
     setFormData({
       ...formData,
       dataNascimento: value,
@@ -141,7 +137,7 @@ const EditarAtendimento = () => {
       checkIfBirthday(value);
     }
     
-    // Lógica simples para determinar o signo baseado na data de nascimento
+    // Calculate zodiac sign
     if (value) {
       const date = new Date(value);
       const month = date.getMonth() + 1;
@@ -161,9 +157,17 @@ const EditarAtendimento = () => {
       else if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) signoCalculado = "Aquário";
       else signoCalculado = "Peixes";
       
-      setSigno(signoCalculado);
+      setFormData({
+        ...formData,
+        dataNascimento: value,
+        signo: signoCalculado,
+      });
     } else {
-      setSigno("");
+      setFormData({
+        ...formData,
+        dataNascimento: value,
+        signo: "",
+      });
     }
   };
 
@@ -180,29 +184,22 @@ const EditarAtendimento = () => {
     }
 
     try {
-      // Get existing atendimentos from user data service
       const existingAtendimentos = getAtendimentos();
       
       const atendimentoAtualizado = {
         id: id,
         ...formData,
-        signo,
-        atencaoFlag: atencao,
         dataUltimaEdicao: new Date().toISOString(),
       };
       
-      // Update the specific atendimento
       const atendimentosAtualizados = existingAtendimentos.map(atendimento => 
         atendimento.id === id ? atendimentoAtualizado : atendimento
       );
       
-      // Save back using user data service
       saveAtendimentos(atendimentosAtualizados);
       
-      // Show success message
       toast.success("Atendimento atualizado com sucesso!");
       
-      // Navigate back to home page
       navigate("/");
     } catch (error) {
       console.error('Erro ao salvar atendimento:', error);
@@ -210,7 +207,6 @@ const EditarAtendimento = () => {
     }
   };
   
-  // Helper function to get status color
   const getStatusColor = (status) => {
     switch (status) {
       case "pago":
@@ -277,14 +273,14 @@ const EditarAtendimento = () => {
                 <Input 
                   id="dataNascimento" 
                   type="date" 
-                  value={dataNascimento}
+                  value={formData.dataNascimento}
                   onChange={handleDataNascimentoChange}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="signo">Signo</Label>
-                <Input id="signo" value={signo} readOnly className="bg-gray-50" />
+                <Input id="signo" value={formData.signo} readOnly className="bg-gray-50" />
               </div>
 
               <div className="space-y-2">
@@ -369,19 +365,19 @@ const EditarAtendimento = () => {
               <div className="space-y-2 flex flex-col">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="atencao" className="text-base flex items-center">
-                    <AlertTriangle className={`mr-2 h-4 w-4 ${atencao ? "text-red-500" : "text-gray-400"}`} />
+                    <AlertTriangle className={`mr-2 h-4 w-4 ${formData.atencaoFlag ? "text-red-500" : "text-gray-400"}`} />
                     ATENÇÃO
                   </Label>
                   <Switch 
-                    checked={atencao} 
-                    onCheckedChange={setAtencao} 
+                    checked={formData.atencaoFlag} 
+                    onCheckedChange={(checked) => setFormData({...formData, atencaoFlag: checked})} 
                     className="data-[state=checked]:bg-red-500"
                   />
                 </div>
                 <Input 
                   id="atencaoNota" 
                   placeholder="Pontos de atenção" 
-                  className={atencao ? "border-red-500 bg-red-50" : ""}
+                  className={formData.atencaoFlag ? "border-red-500 bg-red-50" : ""}
                   value={formData.atencaoNota}
                   onChange={handleInputChange}
                 />
